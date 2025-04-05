@@ -1,0 +1,764 @@
+// src/components/PropertiesSidebar.js
+import React, { useState, useMemo, useEffect } from 'react';
+import styled from 'styled-components';
+import { OverlayTrigger, Tooltip } from 'react-bootstrap';
+import {
+  AlignLeft, AlignCenter, AlignRight, AlignJustify,
+  Bold, Italic, Underline,
+  Type, Layout as LayoutIcon, Eye, Droplet,
+  ChevronDown, Square,
+  Maximize2, ArrowUp, ArrowDown, MoveHorizontal,
+  Grid, CornerUpRight, AlignVerticalJustifyCenter,
+  Image as ImageIcon,
+  BoxSelect,
+  Palette,
+  ArrowLeftCircle
+} from 'lucide-react';
+
+import ImageUpload from './ImageUpload';
+import { useBuilderContext } from '../context/BuilderContext';
+
+// Helper for breadcrumbs/hierarchy
+const getBrickHierarchy = (brickId, bricks, path = []) => {
+  for (const brick of bricks) {
+    const newPath = [...path, brick];
+    if (brick.id === brickId) return newPath;
+    if (brick.components) {
+      const result = getBrickHierarchy(brickId, brick.components, newPath);
+      if (result) return result;
+    }
+  }
+  return null;
+};
+
+/* ------------------ Styled Components ------------------ */
+const EditorContainer = styled.div`
+  background-color: #fff; 
+  color: #333;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  width: 320px;
+  font-family: 'Inter', Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+`;
+
+const EditorHeader = styled.div`
+  font-size: 16px;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #ddd;
+`;
+
+const CloseButton = styled.button`
+  background-color: transparent;
+  border: none;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  cursor: pointer;
+  &:hover {
+    color: #000;
+  }
+`;
+
+const ContentContainer = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  &::-webkit-scrollbar {
+    width: 0px;
+    height: 0px;
+  }
+`;
+
+const Section = styled.div`
+  padding: 16px;
+  border-bottom: 1px solid #eee;
+`;
+
+const SectionTitle = styled.div`
+  font-size: 14px;
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+`;
+
+const FlexRow = styled.div`
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+`;
+
+const IconButtonGroup = styled.div`
+  display: flex;
+  background-color: #f1f3f4;
+  border-radius: 6px;
+  overflow: hidden;
+`;
+
+const IconButton = styled.button`
+  background-color: transparent;
+  border: none;
+  color: #555;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  cursor: pointer;
+  &:hover {
+    background-color: #e7e9eb;
+    color: #333;
+  }
+  &.active {
+    background-color: #ddd;
+    color: #333;
+  }
+`;
+
+const FieldContainer = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 12px;
+`;
+
+const InputLabel = styled.label`
+  font-size: 12px;
+  color: #999;
+  margin-bottom: 4px;
+`;
+
+const StyledInput = styled.input`
+  width: 100%;
+  background-color: #f8f9fa;
+  color: #333;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 8px;
+  font-size: 13px;
+  &:focus {
+    outline: none;
+    border-color: #aaa;
+  }
+`;
+
+const AdvancedColorPickerContainer = styled.div`
+  padding: 16px;
+  background: #f8f9fa;
+  border-top: 1px solid #eee;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+`;
+
+const AdvancedColorHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+`;
+
+const ColorPreview = styled.div`
+  height: 80px;
+  border-radius: 4px;
+  background-color: ${(props) => props.color};
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 8px;
+  color: #fff;
+  font-size: 12px;
+`;
+
+const ThemeSwatches = styled.div`
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+`;
+
+const ThemeSwatch = styled.div`
+  width: 100%;
+  aspect-ratio: 1;
+  background-color: ${(props) => props.color};
+  border-radius: 4px;
+  border: 2px solid ${(props) => (props.active ? '#000' : 'transparent')};
+  cursor: pointer;
+`;
+
+const HexInputGroup = styled.div`
+  display: flex;
+  margin-top: 8px;
+  input {
+    flex: 1;
+    padding: 6px 8px;
+    font-size: 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px 0 0 4px;
+    &:focus {
+      outline: none;
+      border-color: #999;
+    }
+  }
+  button {
+    padding: 6px 12px;
+    font-size: 12px;
+    background: #e1e1e1;
+    border: 1px solid #ccc;
+    border-left: none;
+    border-radius: 0 4px 4px 0;
+    cursor: pointer;
+    &:hover {
+      background: #d2d2d2;
+    }
+  }
+`;
+
+const ClearButton = styled.button`
+  background: none;
+  border: 1px solid #ccc;
+  padding: 4px 12px;
+  font-size: 12px;
+  border-radius: 4px;
+  margin-top: 8px;
+  cursor: pointer;
+  &:hover {
+    background: #eee;
+  }
+`;
+
+const CheckboxLabel = styled.label`
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 13px;
+  color: #444;
+  margin-top: 4px;
+  input {
+    margin-right: 6px;
+  }
+`;
+
+/* ------------------ PropertiesSidebar Component ------------------ */
+export function PropertiesSidebar() {
+  const { selectedBrickId, getBrickById, updateBrickProps, pageData } = useBuilderContext();
+
+  // Get the selected brick and its hierarchy for breadcrumb display.
+  const hierarchy = useMemo(() => getBrickHierarchy(selectedBrickId, pageData), [selectedBrickId, pageData]);
+  const selectedBrick = useMemo(
+    () =>
+      hierarchy
+        ? hierarchy[hierarchy.length - 1]
+        : (getBrickById(selectedBrickId) || null),
+    [hierarchy, selectedBrickId, getBrickById]
+  );
+  const brick = useMemo(() => getBrickById(selectedBrickId), [selectedBrickId, getBrickById]);
+
+  // Local state for advanced color picker and typography.
+  const [showAdvancedColorPicker, setShowAdvancedColorPicker] = useState(false);
+  const [currentColor, setCurrentColor] = useState('#ffffff');
+  const [hexInput, setHexInput] = useState('#ffffff');
+  const [currentThemeLabel, setCurrentThemeLabel] = useState('Custom');
+  const [lockAspectRatio, setLockAspectRatio] = useState(false);
+  const [typography, setTypography] = useState({
+    font: 'Inter',
+    weight: 'Bold',
+    size: 12,
+    letterSpacing: 0,
+    textAlign: 'left',
+    italic: false,
+    underline: false
+  });
+  const themeSwatches = useMemo(
+    () => [
+      { label: 'White', color: '#FFFFFF' },
+      { label: 'Black', color: '#000000' },
+      { label: 'Gray', color: '#999999' },
+      { label: 'Dark Gray', color: '#666666' },
+      { label: 'Accent / Brown', color: '#bfa890' },
+      { label: 'Accent / Green', color: '#95ad90' },
+      { label: 'Accent / Silver', color: '#bcc4c0' },
+      { label: 'Accent / Three', color: '#D8613C' }
+    ],
+    []
+  );
+
+  // Sync local state with selected brick's properties.
+  useEffect(() => {
+    if (brick?.props) {
+      const colorVal = brick.props.bgColor || '#ffffff';
+      setCurrentColor(colorVal);
+      setHexInput(colorVal);
+      const swatchMatch = themeSwatches.find(
+        (s) => s.color.toLowerCase() === colorVal.toLowerCase()
+      );
+      setCurrentThemeLabel(swatchMatch ? swatchMatch.label : 'Custom');
+      if (brick.props.aspectLock !== undefined) {
+        setLockAspectRatio(brick.props.aspectLock);
+      }
+      if (brick.props.typography) {
+        setTypography(brick.props.typography);
+      }
+    }
+  }, [brick?.props, themeSwatches]);
+
+  // Handlers for advanced color picker.
+  const handleThemeSwatchPick = (swatch) => {
+    setCurrentColor(swatch.color);
+    setHexInput(swatch.color);
+    setCurrentThemeLabel(swatch.label);
+    updateBrickProps(brick.id, { bgColor: swatch.color });
+  };
+
+  const handleClearColor = () => {
+    setCurrentColor('#ffffff');
+    setHexInput('#ffffff');
+    setCurrentThemeLabel('None');
+    updateBrickProps(brick.id, { bgColor: '#ffffff' });
+  };
+
+  const handleApplyHex = () => {
+    setCurrentColor(hexInput);
+    setCurrentThemeLabel('Custom');
+    updateBrickProps(brick.id, { bgColor: hexInput });
+  };
+
+  const handleChangeDimension = (propName, value) => {
+    updateBrickProps(brick.id, { [propName]: value });
+    if (lockAspectRatio && brick.props.width && brick.props.height) {
+      if (propName === 'width') {
+        const ratio = brick.props.height / brick.props.width;
+        updateBrickProps(brick.id, { height: Math.round(value * ratio) });
+      } else if (propName === 'height') {
+        const ratio = brick.props.width / brick.props.height;
+        updateBrickProps(brick.id, { width: Math.round(value * ratio) });
+      }
+    }
+  };
+
+  const handleAspectRatioToggle = (checked) => {
+    setLockAspectRatio(checked);
+    updateBrickProps(brick.id, { aspectLock: checked });
+  };
+
+  const handleTypographyChange = (key, value) => {
+    const newTypography = { ...typography, [key]: value };
+    setTypography(newTypography);
+    updateBrickProps(brick.id, { typography: newTypography });
+  };
+
+  const handleTextAlignChange = (alignment) => {
+    const newTypography = { ...typography, textAlign: alignment };
+    setTypography(newTypography);
+    updateBrickProps(brick.id, { typography: newTypography });
+  };
+
+  if (!brick) {
+    return (
+      <EditorContainer>
+        <EditorHeader>
+          <div>No Selection</div>
+          <CloseButton onClick={() => console.log('Close panel clicked')}>
+            <ChevronDown size={16} />
+          </CloseButton>
+        </EditorHeader>
+        <div style={{ padding: 16 }}>
+          <p style={{ marginTop: 16, fontSize: 14 }}>Select a block to edit its properties.</p>
+        </div>
+      </EditorContainer>
+    );
+  }
+
+  return (
+    <EditorContainer>
+      <EditorHeader>
+        {brick.type}
+        <CloseButton onClick={() => console.log('Close panel clicked')}>
+          <ChevronDown size={16} />
+        </CloseButton>
+      </EditorHeader>
+
+      <ContentContainer>
+        {/* Breadcrumb navigation */}
+        <div style={{ marginBottom: '1rem', fontSize: '14px', color: '#555' }}>
+          {hierarchy &&
+            hierarchy.map((b, idx) => (
+              <span key={b.id}>
+                {b.type}
+                {idx < hierarchy.length - 1 ? ' / ' : ''}
+              </span>
+            ))}
+        </div>
+        {showAdvancedColorPicker ? (
+          <AdvancedColorPickerContainer>
+            <AdvancedColorHeader>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Palette size={16} />
+                <strong>Advanced Color</strong>
+              </div>
+              <button
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#666',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center'
+                }}
+                onClick={() => setShowAdvancedColorPicker(false)}
+              >
+                <ArrowLeftCircle size={20} style={{ marginRight: 4 }} />
+                Back
+              </button>
+            </AdvancedColorHeader>
+            <ColorPreview color={currentColor}>
+              <div style={{ fontWeight: 600 }}>{currentThemeLabel}</div>
+              <div>{currentColor}</div>
+            </ColorPreview>
+            <ThemeSwatches>
+              {themeSwatches.map((swatch, i) => (
+                <ThemeSwatch
+                  key={i}
+                  color={swatch.color}
+                  active={swatch.color.toLowerCase() === currentColor.toLowerCase()}
+                  onClick={() => handleThemeSwatchPick(swatch)}
+                />
+              ))}
+            </ThemeSwatches>
+            <ClearButton onClick={handleClearColor}>Clear</ClearButton>
+            <HexInputGroup>
+              <input value={hexInput} onChange={(e) => setHexInput(e.target.value)} />
+              <button onClick={handleApplyHex}>Apply</button>
+            </HexInputGroup>
+          </AdvancedColorPickerContainer>
+        ) : (
+          <>
+            {/* POSITION SECTION */}
+            <Section>
+              <SectionTitle>
+                Position
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <IconButton><AlignVerticalJustifyCenter size={16} /></IconButton>
+                  <IconButton><Grid size={16} /></IconButton>
+                  <IconButton><AlignJustify size={16} /></IconButton>
+                </div>
+              </SectionTitle>
+              <FlexRow>
+                <FieldContainer>
+                  <InputLabel>X</InputLabel>
+                  <StyledInput
+                    type="number"
+                    value={brick.props.x || 0}
+                    onChange={(e) => updateBrickProps(brick.id, { x: Number(e.target.value) })}
+                  />
+                </FieldContainer>
+                <FieldContainer>
+                  <InputLabel>Y</InputLabel>
+                  <StyledInput
+                    type="number"
+                    value={brick.props.y || 0}
+                    onChange={(e) => updateBrickProps(brick.id, { y: Number(e.target.value) })}
+                  />
+                </FieldContainer>
+              </FlexRow>
+              <FlexRow>
+                <FieldContainer>
+                  <InputLabel>
+                    <CornerUpRight size={14} style={{ transform: 'rotate(-90deg)' }} />
+                  </InputLabel>
+                  <StyledInput
+                    type="number"
+                    value={brick.props.rotate || 0}
+                    onChange={(e) => updateBrickProps(brick.id, { rotate: Number(e.target.value) })}
+                  />
+                </FieldContainer>
+                <IconButtonGroup>
+                  <IconButton><MoveHorizontal size={16} /></IconButton>
+                  <IconButton><ArrowUp size={16} /></IconButton>
+                  <IconButton><ArrowDown size={16} /></IconButton>
+                </IconButtonGroup>
+              </FlexRow>
+            </Section>
+
+            {/* LAYOUT SECTION */}
+            <Section>
+              <SectionTitle>
+                Layout
+                <Maximize2 size={16} />
+              </SectionTitle>
+              <FlexRow>
+                <FieldContainer>
+                  <InputLabel>W</InputLabel>
+                  <StyledInput
+                    type="number"
+                    value={brick.props.width || 300}
+                    onChange={(e) => handleChangeDimension('width', Number(e.target.value))}
+                  />
+                </FieldContainer>
+                <FieldContainer>
+                  <InputLabel>H</InputLabel>
+                  <StyledInput
+                    type="number"
+                    value={brick.props.height || 200}
+                    onChange={(e) => handleChangeDimension('height', Number(e.target.value))}
+                  />
+                </FieldContainer>
+                <IconButton><Square size={16} /></IconButton>
+              </FlexRow>
+              <FlexRow>
+                <IconButton><CornerUpRight size={16} /></IconButton>
+                <IconButton><AlignJustify size={16} /></IconButton>
+                <IconButton style={{ flex: 1 }}><LayoutIcon size={16} /></IconButton>
+              </FlexRow>
+              <FlexRow>
+                <CheckboxLabel>
+                  <input
+                    type="checkbox"
+                    checked={lockAspectRatio}
+                    onChange={(e) => handleAspectRatioToggle(e.target.checked)}
+                  />
+                  Lock Ratio
+                </CheckboxLabel>
+              </FlexRow>
+            </Section>
+
+            {/* SPACING SECTION */}
+            <Section>
+              <SectionTitle>
+                Spacing
+                <BoxSelect size={16} />
+              </SectionTitle>
+              <FlexRow>
+                <FieldContainer>
+                  <InputLabel>Margin</InputLabel>
+                  <StyledInput
+                    type="number"
+                    value={brick.props.margin || 0}
+                    onChange={(e) => updateBrickProps(brick.id, { margin: Number(e.target.value) })}
+                  />
+                </FieldContainer>
+                <FieldContainer>
+                  <InputLabel>Padding</InputLabel>
+                  <StyledInput
+                    type="number"
+                    value={brick.props.padding || 0}
+                    onChange={(e) => updateBrickProps(brick.id, { padding: Number(e.target.value) })}
+                  />
+                </FieldContainer>
+              </FlexRow>
+            </Section>
+
+            {/* APPEARANCE SECTION */}
+            <Section>
+              <SectionTitle>
+                Appearance
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <IconButton><Eye size={16} /></IconButton>
+                  <IconButton><Droplet size={16} /></IconButton>
+                </div>
+              </SectionTitle>
+              <FlexRow>
+                <FieldContainer>
+                  <InputLabel>Opacity</InputLabel>
+                  <StyledInput
+                    type="number"
+                    value={brick.props.opacity || 100}
+                    onChange={(e) => updateBrickProps(brick.id, { opacity: Number(e.target.value) })}
+                  />
+                </FieldContainer>
+                <FieldContainer>
+                  <InputLabel>Radius</InputLabel>
+                  <StyledInput
+                    type="number"
+                    value={brick.props.radius || 0}
+                    onChange={(e) => updateBrickProps(brick.id, { radius: Number(e.target.value) })}
+                  />
+                </FieldContainer>
+              </FlexRow>
+              <FlexRow>
+                <IconButton
+                  onClick={() => setShowAdvancedColorPicker(true)}
+                  style={{ flex: 1, justifyContent: 'center' }}
+                >
+                  <Palette size={16} />
+                  <span style={{ marginLeft: 6 }}>Color</span>
+                </IconButton>
+              </FlexRow>
+            </Section>
+
+            {/* TYPOGRAPHY SECTION */}
+            <Section>
+              <SectionTitle>
+                Typography
+                <Grid size={16} />
+              </SectionTitle>
+              <FlexRow>
+                <FieldContainer>
+                  <InputLabel>Font</InputLabel>
+                  <StyledInput
+                    type="text"
+                    value={typography.font}
+                    onChange={(e) => handleTypographyChange('font', e.target.value)}
+                  />
+                </FieldContainer>
+              </FlexRow>
+              <FlexRow>
+                <FieldContainer>
+                  <InputLabel>Weight</InputLabel>
+                  <StyledInput
+                    type="text"
+                    value={typography.weight}
+                    onChange={(e) => handleTypographyChange('weight', e.target.value)}
+                  />
+                </FieldContainer>
+                <FieldContainer>
+                  <InputLabel>Size</InputLabel>
+                  <StyledInput
+                    type="number"
+                    value={typography.size}
+                    onChange={(e) => handleTypographyChange('size', Number(e.target.value))}
+                  />
+                </FieldContainer>
+              </FlexRow>
+              <FlexRow>
+                <FieldContainer>
+                  <InputLabel>Letter Spacing</InputLabel>
+                  <StyledInput
+                    type="number"
+                    value={typography.letterSpacing}
+                    onChange={(e) => handleTypographyChange('letterSpacing', Number(e.target.value))}
+                  />
+                </FieldContainer>
+              </FlexRow>
+              <FlexRow>
+                <OverlayTrigger placement="top" overlay={<Tooltip id="tooltip-align-left">Align Left</Tooltip>}>
+                  <IconButton
+                    className={typography.textAlign === 'left' ? 'active' : ''}
+                    onClick={() => handleTextAlignChange('left')}
+                  >
+                    <AlignLeft size={16} />
+                  </IconButton>
+                </OverlayTrigger>
+                <OverlayTrigger placement="top" overlay={<Tooltip id="tooltip-align-center">Align Center</Tooltip>}>
+                  <IconButton
+                    className={typography.textAlign === 'center' ? 'active' : ''}
+                    onClick={() => handleTextAlignChange('center')}
+                  >
+                    <AlignCenter size={16} />
+                  </IconButton>
+                </OverlayTrigger>
+                <OverlayTrigger placement="top" overlay={<Tooltip id="tooltip-align-right">Align Right</Tooltip>}>
+                  <IconButton
+                    className={typography.textAlign === 'right' ? 'active' : ''}
+                    onClick={() => handleTextAlignChange('right')}
+                  >
+                    <AlignRight size={16} />
+                  </IconButton>
+                </OverlayTrigger>
+                <OverlayTrigger placement="top" overlay={<Tooltip id="tooltip-align-justify">Justify</Tooltip>}>
+                  <IconButton
+                    className={typography.textAlign === 'justify' ? 'active' : ''}
+                    onClick={() => handleTextAlignChange('justify')}
+                  >
+                    <AlignJustify size={16} />
+                  </IconButton>
+                </OverlayTrigger>
+              </FlexRow>
+              <FlexRow>
+                <IconButtonGroup>
+                  <OverlayTrigger placement="top" overlay={<Tooltip id="tooltip-bold">Bold</Tooltip>}>
+                    <IconButton
+                      className={typography.weight.toLowerCase() === 'bold' ? 'active' : ''}
+                      onClick={() =>
+                        handleTypographyChange(
+                          'weight',
+                          typography.weight.toLowerCase() === 'bold' ? 'Regular' : 'Bold'
+                        )
+                      }
+                    >
+                      <Bold size={16} />
+                    </IconButton>
+                  </OverlayTrigger>
+                  <OverlayTrigger placement="top" overlay={<Tooltip id="tooltip-italic">Italic</Tooltip>}>
+                    <IconButton
+                      className={typography.italic ? 'active' : ''}
+                      onClick={() => handleTypographyChange('italic', !typography.italic)}
+                    >
+                      <Italic size={16} />
+                    </IconButton>
+                  </OverlayTrigger>
+                  <OverlayTrigger placement="top" overlay={<Tooltip id="tooltip-underline">Underline</Tooltip>}>
+                    <IconButton
+                      className={typography.underline ? 'active' : ''}
+                      onClick={() => handleTypographyChange('underline', !typography.underline)}
+                    >
+                      <Underline size={16} />
+                    </IconButton>
+                  </OverlayTrigger>
+                </IconButtonGroup>
+                <IconButtonGroup>
+                  <OverlayTrigger placement="top" overlay={<Tooltip id="tooltip-arrow-up">Move Up</Tooltip>}>
+                    <IconButton>
+                      <ArrowUp size={16} />
+                    </IconButton>
+                  </OverlayTrigger>
+                  <OverlayTrigger placement="top" overlay={<Tooltip id="tooltip-type">Change Type</Tooltip>}>
+                    <IconButton>
+                      <Type size={16} />
+                    </IconButton>
+                  </OverlayTrigger>
+                  <OverlayTrigger placement="top" overlay={<Tooltip id="tooltip-arrow-down">Move Down</Tooltip>}>
+                    <IconButton>
+                      <ArrowDown size={16} />
+                    </IconButton>
+                  </OverlayTrigger>
+                  <OverlayTrigger placement="top" overlay={<Tooltip id="tooltip-move-horizontal">Move Horizontal</Tooltip>}>
+                    <IconButton>
+                      <MoveHorizontal size={16} />
+                    </IconButton>
+                  </OverlayTrigger>
+                </IconButtonGroup>
+              </FlexRow>
+            </Section>
+
+            {/* FILL SECTION */}
+            <Section>
+              <SectionTitle>
+                Fill
+                <ImageIcon size={16} />
+              </SectionTitle>
+              <FlexRow>
+                <FieldContainer>
+                  <InputLabel>Image</InputLabel>
+                  <ImageUpload onUpload={(url) => updateBrickProps(brick.id, { imageSrc: url })} />
+                </FieldContainer>
+              </FlexRow>
+              <FlexRow>
+                <FieldContainer>
+                  <InputLabel>Size %</InputLabel>
+                  <StyledInput
+                    type="number"
+                    value={brick.props.fillSize || 100}
+                    onChange={(e) => updateBrickProps(brick.id, { fillSize: Number(e.target.value) })}
+                  />
+                </FieldContainer>
+              </FlexRow>
+            </Section>
+          </>
+        )}
+      </ContentContainer>
+    </EditorContainer>
+  );
+}
+
+export default PropertiesSidebar;
