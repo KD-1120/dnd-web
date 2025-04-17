@@ -1,9 +1,11 @@
 import { conferenceTemplate } from './Conference/index';
 import { concertTemplate } from './Concert/index';
+import { eventTemplate } from './Event';
 // Import other templates as they're created
 
 export const templates = {
   conference: conferenceTemplate,
+  event: eventTemplate,
   concert: concertTemplate,
   // Add other templates
 };
@@ -11,6 +13,7 @@ export const templates = {
 export const templateList = [
   conferenceTemplate,
   concertTemplate,
+  eventTemplate,
   // Add other templates to the list
   {
     id: 'workshop',

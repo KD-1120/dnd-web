@@ -1,11 +1,11 @@
 // Create this file at: src/Pages/Dashboard/WebsiteBuilder/components/SimplifiedCanvas.jsx
+// src/Pages/Dashboard/WebsiteBuilder/components/SimplifiedCanvas.jsx
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useBuilderContext } from '../context/BuilderContext';
 import { useViewMode } from '../context/ViewModeContext';
 import { BrickRegistry } from '../bricks/BrickRegistry';
-
-// Import icons - assuming you have lucide-react installed
+import BlockSelectorModal from './BlockSelectorModal';
 import { Plus, Settings, Copy, Trash2, Menu, Grid, Layout } from 'lucide-react';
 
 // Styled components
@@ -143,97 +143,6 @@ const InsertBlockButton = styled.button`
   }
 `;
 
-// Add a modal component for block selection
-const BlockSelectorModal = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: ${props => props.isOpen ? 'flex' : 'none'};
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-`;
-
-const ModalContent = styled.div`
-  background: white;
-  border-radius: 8px;
-  width: 600px;
-  max-width: 90vw;
-  max-height: 80vh;
-  overflow-y: auto;
-  padding: 24px;
-`;
-
-const ModalHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #eee;
-`;
-
-const ModalTitle = styled.h3`
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-`;
-
-const CloseButton = styled.button`
-  background: transparent;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: #666;
-  
-  &:hover {
-    color: #333;
-  }
-`;
-
-const BlockGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-`;
-
-const BlockCard = styled.button`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 16px;
-  border: 1px solid #eee;
-  border-radius: 8px;
-  background: white;
-  cursor: pointer;
-  transition: all 0.2s;
-  
-  &:hover {
-    border-color: #2563eb;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  }
-`;
-
-const BlockIcon = styled.div`
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f5f7fa;
-  border-radius: 8px;
-  color: #2563eb;
-`;
-
-const BlockName = styled.span`
-  font-size: 14px;
-  font-weight: 500;
-`;
 
 const SimplifiedCanvas = () => {
   const { 
@@ -287,15 +196,6 @@ const SimplifiedCanvas = () => {
     setShowBlockSelector(false);
     setInsertPosition(null);
   };
-  
-  const blockTypes = [
-    { type: 'hero', name: 'Hero', icon: <Layout /> },
-    { type: 'featuresSection', name: 'Features', icon: <Grid /> },
-    { type: 'navigation', name: 'Navigation', icon: <Menu /> },
-    { type: 'title', name: 'Title', icon: <Settings /> },
-    { type: 'text', name: 'Text', icon: <Settings /> },
-    { type: 'image', name: 'Image', icon: <Settings /> }
-  ];
   
   const renderBlock = (block, index) => {
     const isSelected = selectedBrickId === block.id;
@@ -370,28 +270,11 @@ const SimplifiedCanvas = () => {
         )}
       </CanvasWrapper>
       
-      <BlockSelectorModal isOpen={showBlockSelector}>
-        <ModalContent>
-          <ModalHeader>
-            <ModalTitle>Select Block Type</ModalTitle>
-            <CloseButton onClick={() => setShowBlockSelector(false)}>&times;</CloseButton>
-          </ModalHeader>
-          
-          <BlockGrid>
-            {blockTypes.map(block => (
-              <BlockCard 
-                key={block.type}
-                onClick={() => handleBlockTypeSelect(block.type)}
-              >
-                <BlockIcon>
-                  {block.icon}
-                </BlockIcon>
-                <BlockName>{block.name}</BlockName>
-              </BlockCard>
-            ))}
-          </BlockGrid>
-        </ModalContent>
-      </BlockSelectorModal>
+      <BlockSelectorModal 
+        isOpen={showBlockSelector}
+        onClose={() => setShowBlockSelector(false)}
+        onBlockSelect={handleBlockTypeSelect}
+      />
     </>
   );
 };

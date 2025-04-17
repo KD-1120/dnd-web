@@ -3,9 +3,12 @@ import React from 'react';
 import styled from 'styled-components';
 import { useBuilderContext } from '../context/BuilderContext';
 import { BrickRegistry } from './BrickRegistry';
+import ResizableComponent from '../components/ResizableComponent';
+import { useViewMode } from '../context/ViewModeContext';
 
 const StyledContainer = styled.div`
   width: ${props => props.width || '100%'};
+  height: ${props => props.height || 'auto'};
   max-width: ${props => props.maxWidth || 'none'};
   padding-top: ${props => props.paddingTop || '0'};
   padding-bottom: ${props => props.paddingBottom || '0'};
@@ -32,7 +35,20 @@ const StyledContainer = styled.div`
 
 export function ContainerBrickComponent({ brick, onSelect, isSelected }) {
   const { id, props = {}, components = [] } = brick;
-  const { selectedBrickId } = useBuilderContext();
+  const { selectedBrickId, updateBrickProps } = useBuilderContext();
+  const { viewMode } = useViewMode();
+  
+  const isPreview = viewMode === 'preview';
+  
+  const handleResize = (dimensions) => {
+    // Remove 'px' suffix and update props
+    const widthVal = dimensions.width.replace('px', '');
+    const heightVal = dimensions.height.replace('px', '');
+    updateBrickProps(id, {
+      width: widthVal + 'px',
+      height: heightVal !== 'auto' ? heightVal + 'px' : 'auto'
+    });
+  };
   
   return (
     <div 
@@ -47,41 +63,54 @@ export function ContainerBrickComponent({ brick, onSelect, isSelected }) {
         onSelect?.(id);
       }}
     >
-      <StyledContainer
-        width={props.width}
-        maxWidth={props.maxWidth}
-        paddingTop={props.paddingTop}
-        paddingBottom={props.paddingBottom}
-        paddingLeft={props.paddingLeft}
-        paddingRight={props.paddingRight}
-        marginTop={props.marginTop}
-        marginBottom={props.marginBottom}
-        marginLeft={props.marginLeft}
-        marginRight={props.marginRight}
-        bgColor={props.bgColor}
-        bgImage={props.bgImage}
-        borderRadius={props.borderRadius}
-        border={props.border}
-        boxShadow={props.boxShadow}
-        display={props.display}
-        flexDirection={props.flexDirection}
-        justifyContent={props.justifyContent}
-        alignItems={props.alignItems}
-        textAlign={props.textAlign}
-        overflow={props.overflow}
+      <ResizableComponent
+        width={props.width || '100%'}
+        height={props.height || 'auto'}
+        minWidth={props.minWidth || '50px'}
+        minHeight={props.minHeight || '50px'}
+        maxWidth={props.maxWidth || '100%'}
+        maxHeight={props.maxHeight || '2000px'}
+        isResizable={isSelected && !isPreview}
+        onResize={handleResize}
+        resizeHandles={['right', 'bottom', 'bottom-right']}
       >
-        {components.map(component => {
-          const ComponentType = BrickRegistry[component.type]?.component;
-          return ComponentType ? (
-            <ComponentType
-              key={component.id}
-              brick={component}
-              onSelect={onSelect}
-              isSelected={selectedBrickId === component.id}
-            />
-          ) : null;
-        })}
-      </StyledContainer>
+        <StyledContainer
+          width={props.width}
+          height={props.height}
+          maxWidth={props.maxWidth}
+          paddingTop={props.paddingTop}
+          paddingBottom={props.paddingBottom}
+          paddingLeft={props.paddingLeft}
+          paddingRight={props.paddingRight}
+          marginTop={props.marginTop}
+          marginBottom={props.marginBottom}
+          marginLeft={props.marginLeft}
+          marginRight={props.marginRight}
+          bgColor={props.bgColor}
+          bgImage={props.bgImage}
+          borderRadius={props.borderRadius}
+          border={props.border}
+          boxShadow={props.boxShadow}
+          display={props.display}
+          flexDirection={props.flexDirection}
+          justifyContent={props.justifyContent}
+          alignItems={props.alignItems}
+          textAlign={props.textAlign}
+          overflow={props.overflow}
+        >
+          {components.map(component => {
+            const ComponentType = BrickRegistry[component.type]?.component;
+            return ComponentType ? (
+              <ComponentType
+                key={component.id}
+                brick={component}
+                onSelect={onSelect}
+                isSelected={selectedBrickId === component.id}
+              />
+            ) : null;
+          })}
+        </StyledContainer>
+      </ResizableComponent>
     </div>
   );
 }
@@ -90,7 +119,11 @@ export const ContainerBrickInspector = {
   displayName: 'Container',
   props: {
     width: { type: 'text', label: 'Width', defaultValue: '100%' },
-    maxWidth: { type: 'text', label: 'Max Width', defaultValue: 'none' },
+    height: { type: 'text', label: 'Height', defaultValue: 'auto' },
+    minWidth: { type: 'text', label: 'Min Width', defaultValue: '50px' },
+    minHeight: { type: 'text', label: 'Min Height', defaultValue: '50px' },
+    maxWidth: { type: 'text', label: 'Max Width', defaultValue: '100%' },
+    maxHeight: { type: 'text', label: 'Max Height', defaultValue: '2000px' },
     paddingTop: { type: 'number', label: 'Padding Top', defaultValue: 0, unit: 'px' },
     paddingBottom: { type: 'number', label: 'Padding Bottom', defaultValue: 0, unit: 'px' },
     paddingLeft: { type: 'number', label: 'Padding Left', defaultValue: 0, unit: 'px' },
