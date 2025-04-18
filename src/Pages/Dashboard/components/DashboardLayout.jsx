@@ -13,7 +13,8 @@ import {
   X, 
   ChevronDown,
   MessageSquare,
-  Bell
+  Bell,
+  Award
 } from 'lucide-react';
 import { Dropdown } from 'react-bootstrap';
 import { colors, spacing, shadows, borderRadius, typography } from '../../../GlobalStyles';
@@ -325,6 +326,11 @@ const DashboardLayout = () => {
     // Handle logout logic here
     navigate('/login');
   };
+
+  // Check if the current path matches a pattern
+  const isPathActive = (path) => {
+    return location.pathname.includes(path);
+  };
   
   return (
     <LayoutContainer>
@@ -347,45 +353,61 @@ const DashboardLayout = () => {
           </NavItem>
           
           <NavItem>
-            <NavLink to="/dashboard/events" active={location.pathname.includes('/dashboard/events') && 
-              !location.pathname.includes('/attendees') && 
-              !location.pathname.includes('/tickets') && 
-              !location.pathname.includes('/analytics')}>
+            <NavLink 
+              to="/dashboard/events" 
+              active={isPathActive('/dashboard/events') && 
+                !isPathActive('/attendees') && 
+                !isPathActive('/tickets') && 
+                !isPathActive('/analytics') &&
+                !isPathActive('/qa') &&
+                !isPathActive('/polls') &&
+                !isPathActive('/awards')}
+            >
               <Calendar size={18} />
               Events
             </NavLink>
           </NavItem>
           
           <NavItem>
-            <NavLink to="/dashboard/events/attendees" active={location.pathname.includes('/attendees')}>
+            <NavLink to="/dashboard/attendees" active={isPathActive('/attendees')}>
               <Users size={18} />
               Attendees
             </NavLink>
           </NavItem>
           
           <NavItem>
-            <NavLink to="/dashboard/events/tickets" active={location.pathname.includes('/tickets')}>
+            <NavLink to="/dashboard/tickets" active={isPathActive('/tickets')}>
               <Ticket size={18} />
               Tickets
             </NavLink>
           </NavItem>
           
           <NavItem>
-            <NavLink to="/dashboard/events/analytics" active={location.pathname.includes('/analytics')}>
+            <NavLink to="/dashboard/analytics" active={isPathActive('/analytics')}>
               <BarChart2 size={18} />
               Analytics
             </NavLink>
           </NavItem>
           
           <NavItem>
-            <NavLink to="/dashboard/events/qa" active={location.pathname.includes('/qa') || location.pathname.includes('/polls')}>
+            <NavLink 
+              to="/dashboard/qa" 
+              active={isPathActive('/qa') || isPathActive('/polls')}
+            >
               <MessageSquare size={18} />
               Q&A & Polls
             </NavLink>
           </NavItem>
           
           <NavItem>
-            <NavLink to="/dashboard/settings" active={location.pathname.includes('/settings')}>
+            <NavLink to="/dashboard/awards" active={isPathActive('/awards')}>
+              <Award size={18} />
+              Awards & Voting
+            </NavLink>
+          </NavItem>
+          
+          <NavItem>
+            <NavLink to="/dashboard/settings" active={isPathActive('/settings')}>
               <Settings size={18} />
               Settings
             </NavLink>

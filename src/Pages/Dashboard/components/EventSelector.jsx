@@ -34,7 +34,7 @@ const StyledCard = styled(Card)`
 
 const EventImage = styled.div`
   height: 160px;
-  background-image: url(${props => props.src || '/images/event-placeholder.jpg'});
+  background-color: ${colors.lightGray};
   background-size: cover;
   background-position: center;
   border-top-left-radius: ${borderRadius.md};
@@ -84,7 +84,7 @@ const EventSelector = ({ sectionType }) => {
     analytics: 'analytics',
     qa: 'qa',
     polls: 'polls',
-    voting: 'voting'
+    voting: 'awards'
   };
   
   // Map section types to their titles for display
@@ -101,7 +101,7 @@ const EventSelector = ({ sectionType }) => {
     const fetchEvents = async () => {
       try {
         setLoading(true);
-        const eventsData = await EventTicketService.getAllEvents();
+        const eventsData = await EventTicketService.getEvents();
         setEvents(eventsData);
         setLoading(false);
       } catch (err) {
@@ -185,7 +185,7 @@ const EventSelector = ({ sectionType }) => {
             {events.map(event => (
               <Col key={event.id} lg={4} md={6}>
                 <StyledCard onClick={() => handleEventSelect(event.id)}>
-                  <EventImage src={event.coverImage} />
+                  <EventImage />
                   <Card.Body>
                     <EventTitle>{event.title}</EventTitle>
                     
@@ -194,10 +194,10 @@ const EventSelector = ({ sectionType }) => {
                       <span>{formatDate(event.startDate)}</span>
                     </EventMeta>
                     
-                    {event.location && (
+                    {event.venue && (
                       <EventMeta>
                         <MapPin size={14} />
-                        <span>{event.location}</span>
+                        <span>{event.venue}</span>
                       </EventMeta>
                     )}
                     

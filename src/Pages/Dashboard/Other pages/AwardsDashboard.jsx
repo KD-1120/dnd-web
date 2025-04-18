@@ -1,19 +1,36 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Form, Button, Card, Badge, ProgressBar } from 'react-bootstrap';
+import { Container, Form, Button, Card, Badge, ProgressBar, Alert } from 'react-bootstrap';
 import { useParams, Link } from 'react-router-dom';
 import styled from 'styled-components';
-import { AwardsVotingService } from '../services/AwardsVotingService';
-import { Trophy, Plus, BarChart2, Clock, Users } from 'lucide-react';
+import { AwardsVotingService } from '../Other pages/services/AwardsVotingService';
+import { EventTicketService } from '../Other pages/services/EventTicketService';
+import { Trophy, Plus, Clock, Users, ArrowLeft } from 'lucide-react';
+import { colors, spacing, shadows, borderRadius, typography } from '../../../GlobalStyles';
 
 const PageWrapper = styled.div`
-  padding: 2rem;
+  padding: ${spacing.lg};
+  background-color: ${colors.light};
 `;
 
 const PageTitle = styled.h1`
-  font-size: 24px;
+  font-size: ${typography.fontSizes.h1};
   font-weight: 600;
-  color: #1a202c;
-  margin-bottom: 24px;
+  color: ${colors.dark};
+  margin-bottom: ${spacing.sm};
+`;
+
+const BackLink = styled(Link)`
+  display: flex;
+  align-items: center;
+  gap: ${spacing.xs};
+  color: ${colors.secondary};
+  text-decoration: none;
+  margin-bottom: ${spacing.md};
+  
+  &:hover {
+    color: ${colors.primary};
+    text-decoration: none;
+  }
 `;
 
 const ActionButton = styled(Button)`
@@ -26,7 +43,8 @@ const ActionButton = styled(Button)`
 const AwardCard = styled(Card)`
   margin-bottom: 1rem;
   border: none;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: ${shadows.sm};
+  border-radius: ${borderRadius.md};
   transition: transform 0.2s;
 
   &:hover {
@@ -45,7 +63,7 @@ const AwardMeta = styled.div`
   display: flex;
   align-items: center;
   gap: 1rem;
-  color: #64748b;
+  color: ${colors.secondary};
   font-size: 0.875rem;
 `;
 
@@ -54,41 +72,80 @@ const NomineeCard = styled(Card)`
   border: 1px solid #e2e8f0;
 `;
 
+const StatsCard = styled(Card)`
+  background: ${props => props.bgColor || '#fff'};
+  margin-bottom: 1rem;
+  border: none;
+  box-shadow: ${shadows.sm};
+  height: 100%;
+`;
+
+const StatValue = styled.div`
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1a202c;
+`;
+
+const StatLabel = styled.div`
+  color: ${colors.secondary};
+  font-size: 0.875rem;
+`;
+
 const AwardsDashboard = () => {
   const { eventId } = useParams();
+  const [event, setEvent] = useState(null);
   const [awards, setAwards] = useState([]);
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all'); // 'all', 'open', 'closed'
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    loadData();
+    const loadEventData = async () => {
+      if (!eventId) return;
+      
+      try {
+        // Load event details
+        const eventData = await EventTicketService.getEvent(eventId);
+        if (!eventData) {
+          setError("Event not found");
+          return;
+        }
+        setEvent(eventData);
+      } catch (error) {
+        console.error('Error loading event data:', error);
+        setError("Failed to load event data. Please try again.");
+      }
+    };
+
+    loadEventData();
   }, [eventId]);
 
-  const loadData = async () => {
-    try {
-      const [awardsData, analyticsData] = await Promise.all([
-        AwardsVotingService.getEventAwards(eventId),
-        AwardsVotingService.getAwardsAnalytics(eventId)
-      ]);
+  useEffect(() => {
+    const loadAwardsData = async () => {
+      if (!eventId) return;
       
-      setAwards(awardsData);
-      setAnalytics(analyticsData);
-    } catch (error) {
-      console.error('Error loading data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+      try {
+        setLoading(true);
+        
+        // Load award categories and analytics
+        const [awardsData, analyticsData] = await Promise.all([
+          AwardsVotingService.getEventCategories(eventId),
+          AwardsVotingService.getCategoryAnalytics(eventId)
+        ]);
+        
+        setAwards(awardsData);
+        setAnalytics(analyticsData);
+        setError(null);
+      } catch (error) {
+        console.error('Error loading awards data:', error);
+        setError("Failed to load awards data. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const handleVote = async (awardId, nomineeId) => {
-    try {
-      await AwardsVotingService.submitVote(eventId, awardId, nomineeId);
-      await loadData();
-    } catch (error) {
-      console.error('Error submitting vote:', error);
-    }
-  };
+    loadAwardsData();
+  }, [eventId]);
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -107,181 +164,179 @@ const AwardsDashboard = () => {
     return totalVotes > 0 ? (votes / totalVotes) * 100 : 0;
   };
 
-  const filteredAwards = awards.filter(award => {
-    if (filter === 'open') return isVotingOpen(award.votingDeadline);
-    if (filter === 'closed') return !isVotingOpen(award.votingDeadline);
-    return true;
-  });
-
   if (loading) {
     return (
       <PageWrapper>
-        <div className="text-center py-5">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Loading...</span>
+        <Container>
+          <div className="text-center py-5">
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
+            <p className="mt-3">Loading awards data...</p>
           </div>
-        </div>
+        </Container>
       </PageWrapper>
     );
   }
 
   return (
     <PageWrapper>
-      <div className="d-flex align-items-center mb-4">
-        <PageTitle>Awards</PageTitle>
-        <ActionButton
-          variant="primary"
-          as={Link}
-          to={`/dashboard/events/${eventId}/awards/create`}
-        >
-          <Plus size={20} />
-          Create Award Category
-        </ActionButton>
-      </div>
-
-      {analytics && (
-        <div className="row mb-4">
-          <div className="col-md-3">
-            <AwardCard>
-              <Card.Body>
-                <h6 className="text-muted mb-2">Total Awards</h6>
-                <h3>{analytics.totalAwards}</h3>
-              </Card.Body>
-            </AwardCard>
+      <Container>
+        <BackLink to="/dashboard/events">
+          <ArrowLeft size={16} />
+          Back to Events
+        </BackLink>
+        
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <div>
+            <PageTitle>Awards & Voting</PageTitle>
+            {event && <p className="text-muted">Event: {event.title}</p>}
           </div>
-          <div className="col-md-3">
-            <AwardCard>
-              <Card.Body>
-                <h6 className="text-muted mb-2">Open for Voting</h6>
-                <h3>{analytics.openAwards}</h3>
-              </Card.Body>
-            </AwardCard>
-          </div>
-          <div className="col-md-3">
-            <AwardCard>
-              <Card.Body>
-                <h6 className="text-muted mb-2">Total Votes</h6>
-                <h3>{analytics.totalVotes}</h3>
-              </Card.Body>
-            </AwardCard>
-          </div>
-          <div className="col-md-3">
-            <AwardCard>
-              <Card.Body>
-                <h6 className="text-muted mb-2">Total Nominees</h6>
-                <h3>{analytics.totalNominees}</h3>
-              </Card.Body>
-            </AwardCard>
-          </div>
+          <ActionButton
+            variant="primary"
+            as={Link}
+            to={`/dashboard/events/${eventId}/awards/create`}
+          >
+            <Plus size={20} />
+            Create Award Category
+          </ActionButton>
         </div>
-      )}
 
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <Form.Select 
-          style={{ width: 'auto' }}
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-        >
-          <option value="all">All Awards</option>
-          <option value="open">Open for Voting</option>
-          <option value="closed">Voting Closed</option>
-        </Form.Select>
-      </div>
+        {error && (
+          <Alert variant="danger" className="mb-4">
+            {error}
+          </Alert>
+        )}
 
-      {filteredAwards.length === 0 ? (
-        <Card className="text-center p-5">
-          <Card.Body>
-            <Trophy size={48} className="mb-3 text-muted" />
-            <h4>No Awards Yet</h4>
-            <p className="text-muted mb-4">Start by creating your first award category</p>
-            <Button 
-              variant="primary"
-              as={Link}
-              to={`/dashboard/events/${eventId}/awards/create`}
-            >
-              <Plus size={16} className="me-2" />
-              Create Award Category
-            </Button>
-          </Card.Body>
-        </Card>
-      ) : (
-        filteredAwards.map(award => (
-          <AwardCard key={award.id}>
+        {analytics && (
+          <div className="row mb-4">
+            <div className="col-md-3">
+              <StatsCard>
+                <Card.Body>
+                  <StatValue>{analytics.totalCategories || 0}</StatValue>
+                  <StatLabel>Total Awards</StatLabel>
+                </Card.Body>
+              </StatsCard>
+            </div>
+            <div className="col-md-3">
+              <StatsCard>
+                <Card.Body>
+                  <StatValue>{analytics.activeCategories || 0}</StatValue>
+                  <StatLabel>Open for Voting</StatLabel>
+                </Card.Body>
+              </StatsCard>
+            </div>
+            <div className="col-md-3">
+              <StatsCard>
+                <Card.Body>
+                  <StatValue>{analytics.totalVotes || 0}</StatValue>
+                  <StatLabel>Total Votes</StatLabel>
+                </Card.Body>
+              </StatsCard>
+            </div>
+            <div className="col-md-3">
+              <StatsCard>
+                <Card.Body>
+                  <StatValue>{analytics.totalNominees || 0}</StatValue>
+                  <StatLabel>Total Nominees</StatLabel>
+                </Card.Body>
+              </StatsCard>
+            </div>
+          </div>
+        )}
+
+        {awards && awards.length === 0 ? (
+          <Card className="text-center p-5">
             <Card.Body>
-              <CardHeader>
-                <div>
-                  <h5 className="mb-1">{award.title}</h5>
-                  <p className="text-muted mb-0">{award.description}</p>
-                </div>
-                <Badge bg={isVotingOpen(award.votingDeadline) ? 'success' : 'secondary'}>
-                  {isVotingOpen(award.votingDeadline) ? 'Voting Open' : 'Voting Closed'}
-                </Badge>
-              </CardHeader>
-
-              <AwardMeta className="mb-3">
-                <span>
-                  <Users size={14} className="me-1" />
-                  {award.totalVotes} votes
-                </span>
-                <span>
-                  <Clock size={14} className="me-1" />
-                  {isVotingOpen(award.votingDeadline)
-                    ? `Closes ${formatDate(award.votingDeadline)}`
-                    : `Closed ${formatDate(award.votingDeadline)}`}
-                </span>
-              </AwardMeta>
-
-              <div>
-                {award.nominees.map((nominee, index) => {
-                  const votes = award.votes[nominee.id] || 0;
-                  const percentage = calculatePercentage(votes, award.totalVotes);
-                  const hasVoted = award.userVote === nominee.id;
-
-                  return (
-                    <NomineeCard key={nominee.id}>
-                      <Card.Body>
-                        <div className="d-flex justify-content-between align-items-center mb-2">
-                          <div>
-                            <h6 className="mb-1">{nominee.name}</h6>
-                            {nominee.description && (
-                              <small className="text-muted">{nominee.description}</small>
-                            )}
-                          </div>
-                          {isVotingOpen(award.votingDeadline) && (
-                            <Button
-                              variant={hasVoted ? "primary" : "outline-primary"}
-                              size="sm"
-                              onClick={() => handleVote(award.id, nominee.id)}
-                              disabled={hasVoted}
-                            >
-                              {hasVoted ? "Voted" : "Vote"}
-                            </Button>
-                          )}
-                        </div>
-                        <ProgressBar
-                          now={percentage}
-                          label={`${Math.round(percentage)}%`}
-                          variant={hasVoted ? "primary" : "secondary"}
-                        />
-                        <small className="text-muted">
-                          {votes} vote{votes !== 1 ? 's' : ''}
-                        </small>
-                      </Card.Body>
-                    </NomineeCard>
-                  );
-                })}
-              </div>
-
-              {!isVotingOpen(award.votingDeadline) && award.winner && (
-                <div className="mt-3 text-center">
-                  <h6 className="text-success mb-2">Winner</h6>
-                  <h5>{award.winner.name}</h5>
-                </div>
-              )}
+              <Trophy size={48} className="mb-3 text-muted" />
+              <h4>No Award Categories Yet</h4>
+              <p className="text-muted mb-4">Start by creating your first award category</p>
+              <Button 
+                variant="primary"
+                as={Link}
+                to={`/dashboard/events/${eventId}/awards/create`}
+              >
+                <Plus size={16} className="me-2" />
+                Create Award Category
+              </Button>
             </Card.Body>
-          </AwardCard>
-        ))
-      )}
+          </Card>
+        ) : (
+          awards.map(award => {
+            const totalVotes = award.nominees.reduce((sum, nominee) => sum + (nominee.votes || 0), 0);
+            
+            return (
+              <AwardCard key={award.id}>
+                <Card.Body>
+                  <CardHeader>
+                    <div>
+                      <h5 className="mb-1">{award.name}</h5>
+                      <p className="text-muted mb-0">{award.description}</p>
+                    </div>
+                    <Badge bg={isVotingOpen(award.deadline) ? 'success' : 'secondary'}>
+                      {isVotingOpen(award.deadline) ? 'Voting Open' : 'Voting Closed'}
+                    </Badge>
+                  </CardHeader>
+
+                  <AwardMeta className="mb-3">
+                    <span>
+                      <Users size={14} className="me-1" />
+                      {totalVotes} votes
+                    </span>
+                    <span>
+                      <Clock size={14} className="me-1" />
+                      {isVotingOpen(award.deadline)
+                        ? `Closes ${formatDate(award.deadline)}`
+                        : `Closed ${formatDate(award.deadline)}`}
+                    </span>
+                  </AwardMeta>
+
+                  <div>
+                    {award.nominees.map((nominee, index) => {
+                      const votes = nominee.votes || 0;
+                      const percentage = calculatePercentage(votes, totalVotes);
+
+                      return (
+                        <NomineeCard key={nominee.id || index}>
+                          <Card.Body>
+                            <div className="d-flex justify-content-between align-items-center mb-2">
+                              <div>
+                                <h6 className="mb-1">{nominee.name}</h6>
+                                {nominee.description && (
+                                  <small className="text-muted">{nominee.description}</small>
+                                )}
+                              </div>
+                            </div>
+                            <ProgressBar
+                              now={percentage}
+                              label={`${Math.round(percentage)}%`}
+                              variant="primary"
+                            />
+                            <small className="text-muted">
+                              {votes} vote{votes !== 1 ? 's' : ''}
+                            </small>
+                          </Card.Body>
+                        </NomineeCard>
+                      );
+                    })}
+                  </div>
+
+                  {!isVotingOpen(award.deadline) && award.nominees.length > 0 && (
+                    <div className="mt-3 text-center">
+                      <h6 className="text-success mb-2">Winner</h6>
+                      <h5>
+                        {award.nominees.reduce((winner, nominee) => 
+                          !winner || (nominee.votes > winner.votes) ? nominee : winner
+                        , null)?.name || 'No votes recorded'}
+                      </h5>
+                    </div>
+                  )}
+                </Card.Body>
+              </AwardCard>
+            );
+          })
+        )}
+      </Container>
     </PageWrapper>
   );
 };

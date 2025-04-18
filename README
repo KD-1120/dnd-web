@@ -1,0 +1,88 @@
+# Event Manager Dashboard Integration Guide
+
+## Overview of Changes
+
+We've implemented several updates to the event management dashboard to improve navigation and integrate the voting system. Here's a summary of the changes made:
+
+1. **Fixed Dashboard Navigation Flow**: Users can now click on sidebar items like Attendees, Tickets, Analytics, Q&A & Polls, and the new Awards & Voting section, which will show them a list of events to select from before viewing the specific data.
+
+2. **Added Award & Voting System**: This new section allows event organizers to create award categories and manage nominees. The actual voting will be handled on the event website, but the creation and management of award categories happens in the dashboard.
+
+3. **Created Event Selector Component**: When users navigate to a section from the sidebar, they'll see all their events and can choose which one to view data for.
+
+## Key Components Modified
+
+1. **App.js**: Added routes for the event selector and award management pages.
+
+2. **DashboardLayout.jsx**: Updated the sidebar navigation to include the new Awards & Voting section and ensure correct active states.
+
+3. **EventSelector.jsx**: New component that displays events for selection when navigating from the sidebar.
+
+4. **AwardsDashboard.jsx**: New component for managing award categories for an event.
+
+5. **AwardCategoryCreation.jsx**: New component for creating and editing award categories.
+
+6. **AwardsVotingService.js**: New service for handling award category data operations.
+
+## Navigation Flow
+
+The updated navigation flow works as follows:
+
+1. User clicks on a section in the sidebar (e.g., "Attendees", "Analytics", "Awards")
+2. The EventSelector component displays a list of the user's events
+3. User selects an event from the list
+4. The user is navigated to the appropriate page for that event and section
+
+For example:
+- Click "Attendees" → See events list → Select "Conference 2025" → See attendees for "Conference 2025"
+- Click "Awards" → See events list → Select "Music Festival" → See award categories for "Music Festival"
+
+## Award & Voting System Integration
+
+The award and voting system has been designed with the following workflow:
+
+1. Event organizers create award categories through the dashboard
+2. For each category, they set:
+   - Category name and description
+   - Voting deadline
+   - Nominees (name, description)
+3. The dashboard shows stats like:
+   - Total categories
+   - Categories open for voting
+   - Total votes
+   - Total nominees
+4. The actual voting interface will be on the event website
+5. Results are displayed in the dashboard after the voting deadline
+
+## Usage Instructions
+
+### Creating an Award Category
+
+1. Navigate to the Awards section from the sidebar
+2. Select an event from the list
+3. Click "Create Award Category"
+4. Fill in the required details:
+   - Category name
+   - Description
+   - Voting deadline
+   - Add at least two nominees
+5. Click "Create Award Category" to save
+
+### Managing Attendees, Tickets, Analytics, and other Event Data
+
+1. Click on the desired section in the sidebar
+2. Select an event from the list
+3. View or manage the data for that specific event
+
+### Coming Soon
+
+- Export of voting results
+- More detailed analytics for award categories
+- Integration with email notifications for winners
+
+## Technical Notes
+
+- All voting data is currently stored in localStorage for demo purposes
+- The system is designed to be easily extended with a real backend in the future
+- The EventSelector component is reused across all sidebar navigation items
+- Proper error handling is implemented throughout the system

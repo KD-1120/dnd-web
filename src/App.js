@@ -28,6 +28,9 @@ import PollsDashboard from './Pages/Dashboard/Other pages/PollsDashboard';
 import Settings from './Pages/Dashboard/Other pages/Settings';
 import EditEvent from './Pages/Dashboard/Other pages/EditEvent';
 import AttendeesDashboard from './Pages/Dashboard/AttendeesDashboard';
+import EventSelector from './Pages/Dashboard/components/EventSelector';
+import AwardsDashboard from './Pages/Dashboard/Other pages/AwardsDashboard';
+import AwardCategoryCreation from './Pages/Dashboard/Other pages/AwardCategoryCreation';
 
 import DashboardLayout from './Pages/Dashboard/components/DashboardLayout';
 import DashboardHome from './Pages/Dashboard/DashboardHome';
@@ -96,12 +99,19 @@ function AppRoutes() {
                         <Route path="events/:eventId/polls/create" element={<PollCreation />} />
                         <Route path="events/:eventId/qa" element={<QASession />} />
                         <Route path="events/:eventId/analytics" element={<EventAnalytics />} />
-                        <Route path="attendees" element={<AttendeeManagement />} />
-                        <Route path="polls" element={<PollsDashboard />} />
-                        <Route path="analytics" element={<EventAnalytics />} />
+                        <Route path="events/:eventId/awards" element={<AwardsDashboard />} />
+                        <Route path="events/:eventId/awards/create" element={<AwardCategoryCreation />} />
                         <Route path="settings" element={<Settings />} />
                         <Route path="events/website-templates" element={<EventTemplateSelector />} />
                         <Route path="events/:eventId/website" element={<WebsiteBuilder />} />
+                        
+                        {/* Event selector routes for sidebar navigation */}
+                        <Route path="attendees" element={<EventSelector sectionType="attendees" />} />
+                        <Route path="tickets" element={<EventSelector sectionType="tickets" />} />
+                        <Route path="analytics" element={<EventSelector sectionType="analytics" />} />
+                        <Route path="polls" element={<EventSelector sectionType="polls" />} />
+                        <Route path="qa" element={<EventSelector sectionType="qa" />} />
+                        <Route path="awards" element={<EventSelector sectionType="voting" />} />
                     </Route>
                     
                     {/* 404 Page */}

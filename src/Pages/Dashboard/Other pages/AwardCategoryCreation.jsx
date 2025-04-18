@@ -1,56 +1,109 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Container, Form, Button, Card, Alert } from 'react-bootstrap';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { AwardsVotingService } from './services/AwardsVotingService';
-import { ArrowLeft, Plus, Minus } from 'lucide-react';
+import { EventTicketService } from './services/EventTicketService';
+import { ArrowLeft, Plus, Minus, Trophy } from 'lucide-react';
+import { colors, spacing, shadows, borderRadius, typography } from '../../../GlobalStyles';
 
 const PageWrapper = styled.div`
-  padding: 2rem;
+  padding: ${spacing.lg};
+  background-color: ${colors.light};
 `;
 
 const PageTitle = styled.h1`
-  font-size: 24px;
+  font-size: ${typography.fontSizes.h1};
   font-weight: 600;
-  color: #1a202c;
-  margin-bottom: 24px;
+  color: ${colors.dark};
+  margin-bottom: ${spacing.md};
 `;
 
-const BackLink = styled.button`
-  background: none;
-  border: none;
-  color: #4a5568;
-  display: inline-flex;
+const BackLink = styled(Link)`
+  display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-  cursor: pointer;
-  padding: 0;
+  gap: ${spacing.xs};
+  color: ${colors.secondary};
+  text-decoration: none;
+  margin-bottom: ${spacing.md};
   
   &:hover {
-    color: #1a202c;
+    color: ${colors.primary};
+    text-decoration: none;
   }
+`;
+
+const FormSection = styled(Card)`
+  margin-bottom: ${spacing.lg};
+  border: none;
+  box-shadow: ${shadows.sm};
+  border-radius: ${borderRadius.md};
+`;
+
+const FormLabel = styled(Form.Label)`
+  font-weight: 500;
+  margin-bottom: ${spacing.xs};
 `;
 
 const NomineeCard = styled(Card)`
   margin-bottom: 1rem;
+  border: 1px solid ${colors.border};
+  box-shadow: ${shadows.sm};
+`;
+
+const ActionButton = styled(Button)`
+  display: flex;
+  align-items: center;
+  gap: ${spacing.xs};
 `;
 
 const AwardCategoryCreation = () => {
   const { eventId } = useParams();
   const navigate = useNavigate();
+  const [event, setEvent] = useState(null);
   const [categoryData, setCategoryData] = useState({
     name: '',
     description: '',
     deadline: '',
-    nominees: ['', ''] // Start with at least 2 nominee fields
+    nominees: [{ name: '', description: '' }, { name: '', description: '' }]
   });
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleNomineeChange = (index, value) => {
+  useEffect(() => {
+    const loadEventData = async () => {
+      if (!eventId) return;
+      
+      try {
+        // Load event details
+        const eventData = await EventTicketService.getEvent(eventId);
+        if (!eventData) {
+          setError("Event not found");
+          return;
+        }
+        setEvent(eventData);
+        
+        // Set default deadline to be the event end date
+        if (eventData.endDate) {
+          const defaultDeadline = new Date(eventData.endDate);
+          defaultDeadline.setHours(23, 59);
+          setCategoryData(prev => ({
+            ...prev,
+            deadline: defaultDeadline.toISOString().slice(0, 16)
+          }));
+        }
+      } catch (error) {
+        console.error('Error loading event data:', error);
+        setError("Failed to load event data. Please try again.");
+      }
+    };
+
+    loadEventData();
+  }, [eventId]);
+
+  const handleNomineeChange = (index, field, value) => {
     const newNominees = [...categoryData.nominees];
-    newNominees[index] = value;
+    newNominees[index] = { ...newNominees[index], [field]: value };
     setCategoryData(prev => ({
       ...prev,
       nominees: newNominees
@@ -60,12 +113,17 @@ const AwardCategoryCreation = () => {
   const addNominee = () => {
     setCategoryData(prev => ({
       ...prev,
-      nominees: [...prev.nominees, '']
+      nominees: [...prev.nominees, { name: '', description: '' }]
     }));
   };
 
   const removeNominee = (index) => {
-    if (categoryData.nominees.length <= 2) return;
+    if (categoryData.nominees.length <= 2) {
+      setError('At least 2 nominees are required');
+      setTimeout(() => setError(null), 3000);
+      return;
+    }
+    
     setCategoryData(prev => ({
       ...prev,
       nominees: prev.nominees.filter((_, i) => i !== index)
@@ -85,20 +143,18 @@ const AwardCategoryCreation = () => {
       if (!categoryData.deadline) {
         throw new Error('Voting deadline is required');
       }
-      if (categoryData.nominees.some(nom => !nom.trim())) {
-        throw new Error('All nominee fields must be filled');
+      
+      const emptyNominees = categoryData.nominees.filter(n => !n.name.trim());
+      if (emptyNominees.length > 0) {
+        throw new Error('All nominee names must be filled');
       }
 
       // Create the category
-      const category = await AwardsVotingService.createCategory(eventId, {
+      await AwardsVotingService.createCategory(eventId, {
         name: categoryData.name,
         description: categoryData.description,
         deadline: categoryData.deadline,
-        nominees: categoryData.nominees.map(name => ({
-          name,
-          imageUrl: '', // In a real app, you'd handle image uploads
-          description: ''
-        }))
+        nominees: categoryData.nominees
       });
 
       // Redirect to awards dashboard
@@ -114,15 +170,17 @@ const AwardCategoryCreation = () => {
   return (
     <PageWrapper>
       <Container>
-        <BackLink 
-          onClick={() => navigate(`/dashboard/events/${eventId}/awards`)}
-          type="button"
-        >
+        <BackLink to={`/dashboard/events/${eventId}/awards`}>
           <ArrowLeft size={16} />
           Back to Awards
         </BackLink>
 
-        <PageTitle>Create New Award Category</PageTitle>
+        <div className="d-flex align-items-center mb-4">
+          <Trophy size={24} className="me-2 text-primary" />
+          <PageTitle>Create New Award Category</PageTitle>
+        </div>
+        
+        {event && <p className="text-muted mb-4">Event: {event.title}</p>}
 
         {error && (
           <Alert variant="danger" className="mb-4" onClose={() => setError(null)} dismissible>
@@ -130,11 +188,11 @@ const AwardCategoryCreation = () => {
           </Alert>
         )}
 
-        <Card>
+        <FormSection>
           <Card.Body>
             <Form onSubmit={handleSubmit}>
               <Form.Group className="mb-4">
-                <Form.Label>Category Name</Form.Label>
+                <FormLabel>Category Name</FormLabel>
                 <Form.Control
                   type="text"
                   value={categoryData.name}
@@ -145,7 +203,7 @@ const AwardCategoryCreation = () => {
               </Form.Group>
 
               <Form.Group className="mb-4">
-                <Form.Label>Description (Optional)</Form.Label>
+                <FormLabel>Description (Optional)</FormLabel>
                 <Form.Control
                   as="textarea"
                   rows={3}
@@ -156,7 +214,7 @@ const AwardCategoryCreation = () => {
               </Form.Group>
 
               <Form.Group className="mb-4">
-                <Form.Label>Voting Deadline</Form.Label>
+                <FormLabel>Voting Deadline</FormLabel>
                 <Form.Control
                   type="datetime-local"
                   value={categoryData.deadline}
@@ -164,50 +222,74 @@ const AwardCategoryCreation = () => {
                   min={new Date().toISOString().slice(0, 16)}
                   required
                 />
+                <Form.Text className="text-muted">
+                  The deadline determines when voting will close. After this date, results will be visible.
+                </Form.Text>
               </Form.Group>
 
-              <Form.Group className="mb-4">
+              <div className="mb-4">
                 <div className="d-flex justify-content-between align-items-center mb-3">
-                  <Form.Label className="mb-0">Nominees</Form.Label>
-                  <Button
+                  <FormLabel className="mb-0">Nominees</FormLabel>
+                  <ActionButton
                     variant="outline-primary"
                     size="sm"
                     onClick={addNominee}
                     type="button"
                   >
-                    <Plus size={16} className="me-1" />
+                    <Plus size={16} />
                     Add Nominee
-                  </Button>
+                  </ActionButton>
                 </div>
+                
                 {categoryData.nominees.map((nominee, index) => (
                   <NomineeCard key={index}>
-                    <Card.Body className="d-flex gap-2">
-                      <Form.Control
-                        type="text"
-                        value={nominee}
-                        onChange={(e) => handleNomineeChange(index, e.target.value)}
-                        placeholder={`Nominee ${index + 1}`}
-                        required
-                      />
+                    <Card.Body>
+                      <Form.Group className="mb-3">
+                        <FormLabel>Nominee Name</FormLabel>
+                        <Form.Control
+                          type="text"
+                          value={nominee.name}
+                          onChange={(e) => handleNomineeChange(index, 'name', e.target.value)}
+                          placeholder={`Nominee ${index + 1}`}
+                          required
+                        />
+                      </Form.Group>
+                      
+                      <Form.Group className="mb-3">
+                        <FormLabel>Description (Optional)</FormLabel>
+                        <Form.Control
+                          as="textarea"
+                          rows={2}
+                          value={nominee.description}
+                          onChange={(e) => handleNomineeChange(index, 'description', e.target.value)}
+                          placeholder="Brief description of the nominee"
+                        />
+                      </Form.Group>
+                      
                       {categoryData.nominees.length > 2 && (
-                        <Button
-                          variant="outline-danger"
-                          onClick={() => removeNominee(index)}
-                          type="button"
-                        >
-                          <Minus size={16} />
-                        </Button>
+                        <div className="text-end">
+                          <Button
+                            variant="outline-danger"
+                            size="sm"
+                            onClick={() => removeNominee(index)}
+                            type="button"
+                          >
+                            <Minus size={14} className="me-1" />
+                            Remove Nominee
+                          </Button>
+                        </div>
                       )}
                     </Card.Body>
                   </NomineeCard>
                 ))}
-              </Form.Group>
+              </div>
 
               <div className="d-flex justify-content-end gap-2">
                 <Button
                   variant="outline-secondary"
                   onClick={() => navigate(`/dashboard/events/${eventId}/awards`)}
                   type="button"
+                  disabled={isSubmitting}
                 >
                   Cancel
                 </Button>
@@ -221,7 +303,7 @@ const AwardCategoryCreation = () => {
               </div>
             </Form>
           </Card.Body>
-        </Card>
+        </FormSection>
       </Container>
     </PageWrapper>
   );
