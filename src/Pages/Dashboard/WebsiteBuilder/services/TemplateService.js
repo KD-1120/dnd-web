@@ -1,75 +1,73 @@
-// src/Pages/Dashboard/WebsiteBuilder/services/TemplateService.js
-import { templates, templateList } from '../templates';
+// templates/TemplateService.js
+import { templates, templateList } from '../templates/index';
 
-/**
- * Template Service
- * 
- * Handles loading templates and saving user customizations
- */
 export class TemplateService {
-  /**
-   * Load available templates
-   * @returns {Promise<Array>} List of available templates
-   */
   static async getTemplates() {
-    try {
-      // In production, this would be an API call
-      return templateList;
-    } catch (error) {
-      console.error('Error loading templates:', error);
-      return [];
-    }
+    // Return the list without the full data to keep it lightweight
+    return templateList.map(template => ({
+      id: template.id,
+      name: template.name,
+      description: template.description,
+      category: template.category || 'Uncategorized',
+      thumbnail: template.thumbnail
+    }));
   }
-
-  /**
-   * Load template data by ID
-   * @param {string} templateId The template identifier
-   * @returns {Promise<Object>} Template data
-   */
-  static async getTemplateById(templateId) {
-    try {
-      // Return from our templates object
-      return templates[templateId] || null;
-    } catch (error) {
-      console.error(`Error loading template ${templateId}:`, error);
+  
+  static async getTemplateById(id) {
+    // Get the full template with data from our templates object
+    if (id === 'blank') {
+      return {
+        id: 'blank',
+        name: 'Blank Template',
+        data: []
+      };
+    }
+    
+    // Get the template from our templates object which should have the full data
+    const template = templates[id];
+    
+    if (!template) {
+      console.error(`Template not found: ${id}`);
       return null;
     }
-  }
-  
-  /**
-   * Save a user-customized template
-   * @param {string} siteId Site identifier
-   * @param {Object} templateData The customized template data
-   * @returns {Promise<boolean>} Success status
-   */
-  static async saveUserTemplate(siteId, templateData) {
-    try {
-      // In production, this would be an API call
-      localStorage.setItem(`site_${siteId}`, JSON.stringify({
-        data: templateData,
-        lastModified: new Date().toISOString()
-      }));
-      return true;
-    } catch (error) {
-      console.error('Error saving template:', error);
-      return false;
+    
+    // Ensure the template has a data property
+    if (!template.data) {
+      console.warn(`Template ${id} missing data property`);
+      template.data = [];
     }
+    
+    // Return a deep copy to prevent modification of the original template
+    return {
+      id: template.id,
+      name: template.name,
+      description: template.description,
+      category: template.category,
+      thumbnail: template.thumbnail,
+      data: JSON.parse(JSON.stringify(template.data))
+    };
   }
   
-  /**
-   * Load a user-customized template
-   * @param {string} siteId Site identifier
-   * @returns {Promise<Object>} The custom template data
-   */
   static async loadUserTemplate(siteId) {
     try {
-      const data = localStorage.getItem(`site_${siteId}`);
-      if (!data) return null;
-      
-      return JSON.parse(data).data;
+      const savedData = localStorage.getItem(`userTemplate_${siteId}`);
+      if (savedData) {
+        return JSON.parse(savedData);
+      }
+      return null;
     } catch (error) {
       console.error('Error loading user template:', error);
       return null;
+    }
+  }
+  
+  static async saveUserTemplate(siteId, data) {
+    try {
+      localStorage.setItem(`userTemplate_${siteId}`, JSON.stringify(data));
+      return true;
+    } catch (error) {
+      console.error('Error saving user template:', error);
+      return false;
     }
   }
 }

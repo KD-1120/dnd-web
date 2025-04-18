@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
+import PropTypes from 'prop-types';
 import { TemplateService } from '../services/TemplateService';
 
 // Styled components
@@ -10,6 +11,7 @@ const Container = styled.div`
 `;
 
 const Header = styled.div`
+  margin-top: 5rem;
   margin-bottom: 2rem;
   text-align: center;
 `;
@@ -161,7 +163,7 @@ const CreateBlankButton = styled(UseTemplateButton)`
   }
 `;
 
-const TemplateSelector = ({ onSelectTemplate, onCreateFromScratch }) => {
+const TemplateSelector = ({ onSelectTemplate = () => {} }) => {
   const [templates, setTemplates] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [loading, setLoading] = useState(true);
@@ -188,6 +190,45 @@ const TemplateSelector = ({ onSelectTemplate, onCreateFromScratch }) => {
     ? templates 
     : templates.filter(t => t.category === selectedCategory);
   
+  const handleCreateBlank = () => {
+    const blankTemplate = {
+      id: 'blank',
+      name: 'Blank Template',
+      category: 'Custom',
+      description: 'Start with a blank canvas and build your event website from scratch.',
+      thumbnail: null,
+      data: [] // Empty data for a blank template
+    };
+    
+    console.log('Selecting blank template', blankTemplate);
+    onSelectTemplate(blankTemplate);
+  };
+
+  const handleTemplateSelect = async (template) => {
+    try {
+      // Load the full template data before selection
+      const fullTemplate = await TemplateService.getTemplateById(template.id);
+      
+      if (!fullTemplate) {
+        console.error('Template not found:', template.id);
+        return; // Don't proceed if template not found
+      }
+      
+      console.log('Selecting template with data:', fullTemplate);
+      
+      // Make sure we're passing a template with a data property
+      if (!fullTemplate.data) {
+        console.warn(`Template ${template.id} missing data property, initializing as empty array`);
+        fullTemplate.data = [];
+      }
+      
+      // Call the onSelectTemplate callback with the full template (including data)
+      onSelectTemplate(fullTemplate);
+    } catch (error) {
+      console.error('Error loading template:', error);
+    }
+  };
+
   return (
     <Container>
       <Header>
@@ -218,7 +259,7 @@ const TemplateSelector = ({ onSelectTemplate, onCreateFromScratch }) => {
           <BlankTemplateDescription>
             Start with a blank canvas and build your event website from scratch.
           </BlankTemplateDescription>
-          <CreateBlankButton onClick={onCreateFromScratch}>
+          <CreateBlankButton onClick={handleCreateBlank}>
             Create Blank Website
           </CreateBlankButton>
         </BlankTemplateCard>
@@ -233,7 +274,7 @@ const TemplateSelector = ({ onSelectTemplate, onCreateFromScratch }) => {
               <TemplateDescription>
                 {template.description}
               </TemplateDescription>
-              <UseTemplateButton onClick={() => onSelectTemplate(template.id)}>
+              <UseTemplateButton onClick={() => handleTemplateSelect(template)}>
                 Use This Template
               </UseTemplateButton>
             </TemplateInfo>
@@ -248,6 +289,11 @@ const TemplateSelector = ({ onSelectTemplate, onCreateFromScratch }) => {
       </TemplateGrid>
     </Container>
   );
+};
+
+// Add prop type validation
+TemplateSelector.propTypes = {
+  onSelectTemplate: PropTypes.func.isRequired
 };
 
 export default TemplateSelector;

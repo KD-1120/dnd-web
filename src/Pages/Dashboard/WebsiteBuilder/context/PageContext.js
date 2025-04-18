@@ -1,5 +1,5 @@
 // Create this file at: src/Pages/Dashboard/WebsiteBuilder/context/PageContext.jsx
-import React, { createContext, useContext, useState, useMemo } from 'react';
+import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 const PageContext = createContext(null);
@@ -18,6 +18,15 @@ export const PageProvider = ({ children, initialData = [] }) => {
       }
     }
   ]);
+  
+  // Update pages when initialData changes
+  useEffect(() => {
+    console.log('PageProvider: initialData changed:', initialData);
+    setPages(prev => prev.map((page, index) => 
+      index === 0 ? { ...page, data: initialData } : page
+    ));
+  }, [initialData]);
+
   const [selectedPageId, setSelectedPageId] = useState(pages[0].id);
 
   const currentPage = useMemo(

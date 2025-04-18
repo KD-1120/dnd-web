@@ -1,5 +1,5 @@
-// Create this file at: src/Pages/Dashboard/WebsiteBuilder/SimplifiedWebsiteBuilder.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import styled, { createGlobalStyle } from 'styled-components';
 import { BuilderProvider } from './context/BuilderContext';
 import { PageProvider } from './context/PageContext';
@@ -7,8 +7,8 @@ import { ViewModeProvider } from './context/ViewModeContext';
 import SimplifiedTopBar from './components/SimplifiedTopBar';
 import SimplifiedCanvas from './components/SimplifiedCanvas';
 import SimplifiedPropertiesSidebar from './components/SimplifiedPropertiesSidebar';
-import TemplateSelector from './components/TemplateSelector';
 import { TemplateService } from './services/TemplateService';
+import { EventService } from './services/EventService';
 
 const GlobalStyle = createGlobalStyle`
   body {
@@ -73,136 +73,157 @@ const Spinner = styled.div`
 `;
 
 function SimplifiedWebsiteBuilder() {
-  // State for UI Controls
   const [isPropertiesOpen, setPropertiesOpen] = useState(true);
   const [loadingTemplate, setLoadingTemplate] = useState(false);
-  const [showTemplateSelector, setShowTemplateSelector] = useState(true);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
-  const [currentSiteId, setCurrentSiteId] = useState(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { eventId } = useParams();
   
-  // This would come from the route params or app state in a real app
-  const eventId = 'event123';
-  
-  const onToggleProperties = () => {
-    setPropertiesOpen((prev) => !prev);
-  };
-  
-  const handleTemplateSelect = async (templateId) => {
-    setLoadingTemplate(true);
+  const loadTemplate = useCallback(async (templateFromState, forceFresh = false) => {
+    console.log("Template loading started, template from state:", templateFromState);
     
+    if (!eventId) {
+      console.error("No event ID provided");
+      navigate('/dashboard/events');
+      return;
+    }
+
+    setLoadingTemplate(true);
     try {
-      // Load template data
-      const templateData = await TemplateService.getTemplateById(templateId);
+      // First check if there's already a saved template for this event
+      const savedEventTemplate = await EventService.getTemplate(eventId);
       
-      if (templateData) {
-        setSelectedTemplate(templateData);
-        setCurrentSiteId(`${eventId}_${templateId}`);
-        setShowTemplateSelector(false);
+      if (savedEventTemplate && !forceFresh) {
+        console.log("Found saved event template");
+        setSelectedTemplate({
+          ...templateFromState,
+          data: savedEventTemplate
+        });
+        return;
+      }
+
+      if (!templateFromState) {
+        console.error("No template provided and no saved template found");
+        navigate('/dashboard/events/website-templates', { 
+          state: { eventId } 
+        });
+        return;
+      }
+
+      let finalTemplate;
+      if (templateFromState.id === 'blank') {
+        finalTemplate = {
+          id: 'blank',
+          name: 'Blank Template',
+          data: []
+        };
       } else {
-        console.error('Template data not found');
+        // Load the full template data
+        const fullTemplate = await TemplateService.getTemplateById(templateFromState.id);
+        
+        if (!fullTemplate) {
+          throw new Error(`Template not found: ${templateFromState.id}`);
+        }
+        
+        finalTemplate = {
+          ...fullTemplate,
+          data: fullTemplate.data || []
+        };
+      }
+
+      console.log("Setting final template:", finalTemplate);
+      setSelectedTemplate(finalTemplate);
+      
+      // Save the initial template for the event
+      if (!savedEventTemplate) {
+        await EventService.saveTemplate(eventId, finalTemplate.data);
       }
     } catch (error) {
       console.error('Error loading template:', error);
+      navigate('/dashboard/events/website-templates', { 
+        state: { eventId } 
+      });
     } finally {
       setLoadingTemplate(false);
     }
-  };
+  }, [eventId, navigate]);
+
+  // Initial template load
+  useEffect(() => {
+    if (location.state?.template) {
+      loadTemplate(location.state.template);
+    } else {
+      // If no template in state, try to load saved event template
+      loadTemplate(null);
+    }
+  }, [location.state, loadTemplate]);
   
-  const handleCreateFromScratch = () => {
-    setSelectedTemplate({
-      id: 'blank',
-      name: 'Blank Template',
-      data: []
+  const onToggleProperties = useCallback(() => {
+    setPropertiesOpen(prev => !prev);
+  }, []);
+
+  const handleBackToTemplates = useCallback(() => {
+    navigate('/dashboard/events/website-templates', {
+      state: { eventId }
     });
-    setCurrentSiteId(`${eventId}_blank`);
-    setShowTemplateSelector(false);
-  };
-  
-  const handleBackToTemplates = () => {
-    setShowTemplateSelector(true);
-    setSelectedTemplate(null);
-  };
+  }, [navigate, eventId]);
   
   const handleSave = async (pageData) => {
-    if (!currentSiteId) return;
+    if (!selectedTemplate || !eventId) return;
     
     setLoadingTemplate(true);
-    
     try {
-      await TemplateService.saveUserTemplate(currentSiteId, pageData);
-      console.log('Site saved successfully');
-      // Could show a success toast here
+      await EventService.saveTemplate(eventId, pageData);
+      console.log('Website saved successfully');
     } catch (error) {
-      console.error('Error saving site:', error);
-      // Could show an error toast here
+      console.error('Error saving website:', error);
     } finally {
       setLoadingTemplate(false);
     }
   };
-  
-  // Check if user has a saved version of this template
-  useEffect(() => {
-    if (!currentSiteId) return;
-    
-    const loadSavedTemplate = async () => {
-      setLoadingTemplate(true);
-      
-      try {
-        const savedTemplate = await TemplateService.loadUserTemplate(currentSiteId);
-        
-        if (savedTemplate) {
-          setSelectedTemplate(prevTemplate => ({
-            ...prevTemplate,
-            data: savedTemplate
-          }));
-        }
-      } catch (error) {
-        console.error('Error loading saved template:', error);
-      } finally {
-        setLoadingTemplate(false);
-      }
-    };
-    
-    loadSavedTemplate();
-  }, [currentSiteId]);
+
+  const handleReset = useCallback(() => {
+    if (selectedTemplate && location.state?.template) {
+      loadTemplate(location.state.template, true);
+    }
+  }, [selectedTemplate, location.state, loadTemplate]);
   
   return (
     <>
       <GlobalStyle />
-      
-      {showTemplateSelector ? (
-        <TemplateSelector
-          onSelectTemplate={handleTemplateSelect}
-          onCreateFromScratch={handleCreateFromScratch}
-        />
-      ) : (
-        <PageProvider initialData={selectedTemplate?.data || []}>
-          <BuilderProvider>
-            <ViewModeProvider>
-              <SimplifiedTopBar 
-                onToggleProperties={onToggleProperties}
-                onSave={handleSave}
-                onBackToTemplates={handleBackToTemplates}
-                templateName={selectedTemplate?.name || 'Untitled'}
-              />
-              <MainContainer>
-                <CanvasContainer>
-                  {loadingTemplate && (
-                    <LoadingOverlay>
-                      <Spinner />
-                      <div>Loading your template...</div>
-                    </LoadingOverlay>
-                  )}
-                  <SimplifiedCanvas />
-                </CanvasContainer>
-                <AnimatedPropertiesSidebar isOpen={isPropertiesOpen}>
-                  <SimplifiedPropertiesSidebar />
-                </AnimatedPropertiesSidebar>
-              </MainContainer>
-            </ViewModeProvider>
-          </BuilderProvider>
-        </PageProvider>
-      )}
+      <PageProvider initialData={selectedTemplate?.data || []}>
+        <BuilderProvider>
+          <ViewModeProvider>
+            <SimplifiedTopBar 
+              onToggleProperties={onToggleProperties}
+              onSave={handleSave}
+              onReset={handleReset}
+              onBackToTemplates={handleBackToTemplates}
+              templateName={selectedTemplate?.name || 'Untitled'}
+            />
+            <MainContainer>
+              <CanvasContainer>
+                {loadingTemplate && (
+                  <LoadingOverlay>
+                    <Spinner />
+                    <div>Loading your template...</div>
+                  </LoadingOverlay>
+                )}
+                {!loadingTemplate && (!selectedTemplate?.data || selectedTemplate.data.length === 0) && (
+                  <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
+                    No template data found. This canvas is empty.
+                  </div>
+                )}
+                <SimplifiedCanvas />
+              </CanvasContainer>
+              <AnimatedPropertiesSidebar isOpen={isPropertiesOpen}>
+                <SimplifiedPropertiesSidebar />
+              </AnimatedPropertiesSidebar>
+            </MainContainer>
+          </ViewModeProvider>
+        </BuilderProvider>
+      </PageProvider>
     </>
   );
 }

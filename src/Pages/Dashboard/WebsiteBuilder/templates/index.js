@@ -1,6 +1,6 @@
 import { conferenceTemplate } from './Conference/index';
 import { concertTemplate } from './Concert/index';
-import { eventTemplate } from './Event';
+import { eventTemplate } from './Event/index';
 // Import other templates as they're created
 
 export const templates = {
@@ -11,7 +11,14 @@ export const templates = {
 };
 
 export const templateList = [
-  conferenceTemplate,
+  {
+    ...conferenceTemplate,
+    id: 'conference',
+    name: 'Professional Conference',
+    description: 'Perfect for tech conferences, summits, and professional gatherings',
+    thumbnail: '/api/placeholder/400/250',
+    category: 'Conferences'
+  },
   concertTemplate,
   eventTemplate,
   // Add other templates to the list

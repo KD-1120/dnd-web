@@ -1,0 +1,89 @@
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { GlobalStyle } from './GlobalStyles';
+
+// Import Dashboard Layout
+import DashboardLayout from './Pages/Dashboard/DashboardLayout';
+
+// Import Dashboard Pages
+import DashboardHome from './Pages/Dashboard/DashboardHome';
+import EventsOverview from './Pages/Dashboard/EventsOverview';
+import EventCreation from './Pages/Dashboard/EventCreation';
+import EventAnalytics from './Pages/Dashboard/EventAnalytics';
+import AttendeesDashboard from './Pages/Dashboard/AttendeesDashboard';
+import TicketManagement from './Pages/Dashboard/TicketManagement';
+import TicketScanner from './Pages/Dashboard/TicketScanner';
+import PollCreation from './Pages/Dashboard/PollCreation';
+import PollsDashboard from './Pages/Dashboard/PollsDashboard';
+import QASession from './Pages/Dashboard/QASession';
+import Settings from './Pages/Dashboard/Settings';
+
+// Import Authentication Pages (placeholders)
+import Login from './Pages/Auth/Login';
+import Register from './Pages/Auth/Register';
+import ForgotPassword from './Pages/Auth/ForgotPassword';
+
+const App = () => {
+  // Mock auth state - in a real app, this would come from an auth context
+  const isAuthenticated = true;
+  
+  return (
+    <Router>
+      <GlobalStyle />
+      <Routes>
+        {/* Public routes */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        
+        {/* Protected dashboard routes */}
+        <Route 
+          path="/dashboard" 
+          element={isAuthenticated ? <DashboardLayout /> : <Navigate to="/login" />}
+        >
+          <Route index element={<DashboardHome />} />
+          
+          {/* Events routes */}
+          <Route path="events">
+            <Route index element={<EventsOverview />} />
+            <Route path="create" element={<EventCreation />} />
+            <Route path=":eventId" element={<EventCreation />} />
+            <Route path=":eventId/analytics" element={<EventAnalytics />} />
+            <Route path=":eventId/attendees" element={<AttendeesDashboard />} />
+            <Route path="attendees" element={<AttendeesDashboard />} />
+          </Route>
+          
+          {/* Ticket routes */}
+          <Route path="events/:eventId/tickets">
+            <Route index element={<TicketManagement />} />
+            <Route path="scan" element={<TicketScanner />} />
+          </Route>
+          <Route path="events/tickets" element={<TicketManagement />} />
+          
+          {/* Q&A and Poll routes */}
+          <Route path="events/:eventId/qa" element={<QASession />} />
+          <Route path="events/:eventId/polls">
+            <Route index element={<PollsDashboard />} />
+            <Route path="create" element={<PollCreation />} />
+          </Route>
+          <Route path="events/qa" element={<QASession />} />
+          <Route path="events/polls" element={<PollsDashboard />} />
+          
+          {/* Settings */}
+          <Route path="settings" element={<Settings />} />
+        </Route>
+        
+        {/* Redirect root to dashboard or login */}
+        <Route 
+          path="/" 
+          element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} />} 
+        />
+        
+        {/* 404 - Redirect to dashboard */}
+        <Route path="*" element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} />} />
+      </Routes>
+    </Router>
+  );
+};
+
+export default App;

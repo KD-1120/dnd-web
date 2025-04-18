@@ -1,210 +1,126 @@
-// Create this file at: src/Pages/Dashboard/WebsiteBuilder/SimplifiedWebsiteBuilder.jsx
-import React, { useState, useEffect } from 'react';
-import styled, { createGlobalStyle } from 'styled-components';
-import { BuilderProvider } from './Pages/Dashboard/WebsiteBuilder/context/BuilderContext';
-import { PageProvider } from './Pages/Dashboard/WebsiteBuilder/context/PageContext';
-import { ViewModeProvider } from './Pages/Dashboard/WebsiteBuilder/context/ViewModeContext';
-import SimplifiedTopBar from './Pages/Dashboard/WebsiteBuilder/components/SimplifiedTopBar';
-import SimplifiedCanvas from './Pages/Dashboard/WebsiteBuilder/components/SimplifiedCanvas';
-import SimplifiedPropertiesSidebar from './Pages/Dashboard/WebsiteBuilder/components/SimplifiedPropertiesSidebar';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import styled from 'styled-components';
+
+// Layout Components
+import Navbar from './Components/Navbar';
+import Footer from './Components/Footer';
+
+// Pages
+import Home from './Pages/Home';
+import CustomEvents from './Pages/Features/CustomEvents';
+import TicketManagement from './Pages/Features/TicketManagement';
+import InteractiveVoting from './Pages/Features/InteractiveVoting';
+import CustomLinks from './Pages/Features/CustomLinks';
+import AnalyticalDashboard from './Pages/Features/AnalyticalDashboard';
+import MobileOptimized from './Pages/Features/MobileOptimized';
+
+// Dashboard Pages 
+import WebsiteBuilder from './Pages/Dashboard/WebsiteBuilder/SimplifiedWebsiteBuilder';
 import TemplateSelector from './Pages/Dashboard/WebsiteBuilder/components/TemplateSelector';
-import { TemplateService } from './Pages/Dashboard/WebsiteBuilder/services/TemplateService';
+import EventCreation from './Pages/Dashboard/Other pages/EventCreation';
+import TicketScanner from './Pages/Dashboard/Other pages/TicketScanner';
+import PollCreation from './Pages/Dashboard/Other pages/PollCreation';
+import EventAnalytics from './Pages/Dashboard/Other pages/EventAnalytics';
+import QASession from './Pages/Dashboard/Other pages/QASession';
+import AttendeeManagement from './Pages/Dashboard/Other pages/AttendeeManagement';
+import PollsDashboard from './Pages/Dashboard/Other pages/PollsDashboard';
+import Settings from './Pages/Dashboard/Other pages/Settings';
+import EditEvent from './Pages/Dashboard/Other pages/EditEvent';
+import AttendeesDashboard from './Pages/Dashboard/AttendeesDashboard';
 
-const GlobalStyle = createGlobalStyle`
-  body {
-    margin: 0;
-    font-family: 'Inter', sans-serif;
-    background: #f8f9fa;
-    height: 100vh;
-    overflow: hidden;
-  }
-`;
+import DashboardLayout from './Pages/Dashboard/components/DashboardLayout';
+import DashboardHome from './Pages/Dashboard/DashboardHome';
+import EventsOverview from './Pages/Dashboard/EventsOverview';
+import Login from './Pages/Login';
+import EventTemplateSelector from './Pages/Dashboard/WebsiteBuilder/components/EventTemplateSelector';
 
-const MainContainer = styled.div`
-  display: flex;
-  height: calc(100vh - 60px);
-  transition: all 0.3s ease;
-`;
+// Auth Pages (these would be created separately)
+const Signup = () => <div>Signup Page</div>;
 
-const CanvasContainer = styled.div`
-  flex: 1;
-  transition: all 0.3s ease;
-  overflow-y: auto;
-  background: #fff;
-  position: relative;
-`;
-
-const AnimatedPropertiesSidebar = styled.div`
-  width: ${({ isOpen }) => (isOpen ? '320px' : '0')};
-  transition: width 0.3s ease, opacity 0.3s ease, transform 0.3s ease;
-  transform: ${({ isOpen }) => (isOpen ? 'translateX(0)' : 'translateX(100%)')};
-  opacity: ${({ isOpen }) => (isOpen ? 1 : 0)};
-  overflow: hidden;
-  height: 100%;
-`;
-
-const LoadingOverlay = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255, 255, 255, 0.8);
+const AppWrapper = styled.div`
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
+  min-height: 100vh;
 `;
 
-const Spinner = styled.div`
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #3498db;
-  border-radius: 50%;
-  width: 50px;
-  height: 50px;
-  animation: spin 2s linear infinite;
-  margin-bottom: 20px;
-  
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
+const MainContent = styled.main`
+  flex: 1 0 auto;
 `;
 
-function SimplifiedWebsiteBuilder() {
-  // State for UI Controls
-  const [isPropertiesOpen, setPropertiesOpen] = useState(true);
-  const [loadingTemplate, setLoadingTemplate] = useState(false);
-  const [showTemplateSelector, setShowTemplateSelector] = useState(true);
-  const [selectedTemplate, setSelectedTemplate] = useState(null);
-  const [currentSiteId, setCurrentSiteId] = useState(null);
-  
-  // This would come from the route params or app state in a real app
-  const eventId = 'event123';
-  
-  const onToggleProperties = () => {
-    setPropertiesOpen((prev) => !prev);
-  };
-  
-  const handleTemplateSelect = async (templateId) => {
-    setLoadingTemplate(true);
+// New component to hold routes and useNavigate hook
+function AppRoutes() {
+    const navigate = useNavigate();
+    const location = useLocation();
     
-    try {
-      // Load template data
-      const templateData = await TemplateService.getTemplateById(templateId);
-      
-      if (templateData) {
-        setSelectedTemplate(templateData);
-        setCurrentSiteId(`${eventId}_${templateId}`);
-        setShowTemplateSelector(false);
-      } else {
-        console.error('Template data not found');
-      }
-    } catch (error) {
-      console.error('Error loading template:', error);
-    } finally {
-      setLoadingTemplate(false);
-    }
-  };
-  
-  const handleCreateFromScratch = () => {
-    setSelectedTemplate({
-      id: 'blank',
-      name: 'Blank Template',
-      data: []
-    });
-    setCurrentSiteId(`${eventId}_blank`);
-    setShowTemplateSelector(false);
-  };
-  
-  const handleBackToTemplates = () => {
-    setShowTemplateSelector(true);
-    setSelectedTemplate(null);
-  };
-  
-  const handleSave = async (pageData) => {
-    if (!currentSiteId) return;
-    
-    setLoadingTemplate(true);
-    
-    try {
-      await TemplateService.saveUserTemplate(currentSiteId, pageData);
-      console.log('Site saved successfully');
-      // Could show a success toast here
-    } catch (error) {
-      console.error('Error saving site:', error);
-      // Could show an error toast here
-    } finally {
-      setLoadingTemplate(false);
-    }
-  };
-  
-  // Check if user has a saved version of this template
-  useEffect(() => {
-    if (!currentSiteId) return;
-    
-    const loadSavedTemplate = async () => {
-      setLoadingTemplate(true);
-      
-      try {
-        const savedTemplate = await TemplateService.loadUserTemplate(currentSiteId);
-        
-        if (savedTemplate) {
-          setSelectedTemplate(prevTemplate => ({
-            ...prevTemplate,
-            data: savedTemplate
-          }));
+    const handleTemplateSelect = async (template) => {
+        try {
+            console.log('Selected template:', template);
+            navigate('/dashboard/website-builder', { 
+                state: { template: template }
+            });
+        } catch (error) {
+            console.error('Error loading template:', error);
         }
-      } catch (error) {
-        console.error('Error loading saved template:', error);
-      } finally {
-        setLoadingTemplate(false);
-      }
     };
-    
-    loadSavedTemplate();
-  }, [currentSiteId]);
-  
-  return (
-    <>
-      <GlobalStyle />
-      
-      {showTemplateSelector ? (
-        <TemplateSelector
-          onSelectTemplate={handleTemplateSelect}
-          onCreateFromScratch={handleCreateFromScratch}
-        />
-      ) : (
-        <PageProvider initialData={selectedTemplate?.data || []}>
-          <BuilderProvider>
-            <ViewModeProvider>
-              <SimplifiedTopBar 
-                onToggleProperties={onToggleProperties}
-                onSave={handleSave}
-                onBackToTemplates={handleBackToTemplates}
-                templateName={selectedTemplate?.name || 'Untitled'}
-              />
-              <MainContainer>
-                <CanvasContainer>
-                  {loadingTemplate && (
-                    <LoadingOverlay>
-                      <Spinner />
-                      <div>Loading your template...</div>
-                    </LoadingOverlay>
-                  )}
-                  <SimplifiedCanvas />
-                </CanvasContainer>
-                <AnimatedPropertiesSidebar isOpen={isPropertiesOpen}>
-                  <SimplifiedPropertiesSidebar />
-                </AnimatedPropertiesSidebar>
-              </MainContainer>
-            </ViewModeProvider>
-          </BuilderProvider>
-        </PageProvider>
-      )}
-    </>
-  );
+
+    return (
+        <>
+            { !location.pathname.startsWith('/dashboard') && <Navbar /> }
+            <MainContent>
+                <Routes>
+                    {/* Public Pages */}
+                    <Route path="/" element={<Home />} />
+                    <Route path="/templates" element={<TemplateSelector onSelectTemplate={handleTemplateSelect} />} />
+                    <Route path="/custom-events" element={<CustomEvents />} />
+                    <Route path="/ticket-management" element={<TicketManagement />} />
+                    <Route path="/interactive-voting" element={<InteractiveVoting />} />
+                    <Route path="/custom-links" element={<CustomLinks />} />
+                    <Route path="/analytics-dashboard" element={<AnalyticalDashboard />} />
+                    <Route path="/mobile-optimized" element={<MobileOptimized />} />
+                    
+                    {/* Auth Routes */}
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/signup" element={<Signup />} />
+                    
+                    {/* Dashboard Routes */}
+                    <Route path="/dashboard" element={<DashboardLayout />}>
+                        <Route index element={<DashboardHome />} />
+                        <Route path="events" element={<EventsOverview />} />
+                        <Route path="events/create" element={<EventCreation />} />
+                        <Route path="events/:eventId/edit" element={<EditEvent />} />
+                        <Route path="events/:eventId/attendees" element={<AttendeesDashboard />} />
+                        <Route path="events/:eventId/tickets" element={<TicketManagement />} />
+                        <Route path="events/:eventId/tickets/scan" element={<TicketScanner />} />
+                        <Route path="events/:eventId/polls" element={<PollsDashboard />} />
+                        <Route path="events/:eventId/polls/create" element={<PollCreation />} />
+                        <Route path="events/:eventId/qa" element={<QASession />} />
+                        <Route path="events/:eventId/analytics" element={<EventAnalytics />} />
+                        <Route path="attendees" element={<AttendeeManagement />} />
+                        <Route path="polls" element={<PollsDashboard />} />
+                        <Route path="analytics" element={<EventAnalytics />} />
+                        <Route path="settings" element={<Settings />} />
+                        <Route path="events/website-templates" element={<EventTemplateSelector />} />
+                        <Route path="events/:eventId/website" element={<WebsiteBuilder />} />
+                    </Route>
+                    
+                    {/* 404 Page */}
+                    <Route path="*" element={<div>Page Not Found</div>} />
+                </Routes>
+            </MainContent>
+            { !location.pathname.startsWith('/dashboard') && <Footer /> }
+        </>
+    );
 }
 
-export default SimplifiedWebsiteBuilder;
+function App() {
+    return (
+        <Router>
+            <AppWrapper>
+                <AppRoutes/>
+            </AppWrapper>
+        </Router>
+    );
+}
+
+export default App;

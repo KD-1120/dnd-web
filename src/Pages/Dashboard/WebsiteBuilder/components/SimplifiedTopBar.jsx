@@ -212,6 +212,7 @@ export function SimplifiedTopBar({
   onToggleProperties, 
   onBackToTemplates, 
   onSave,
+  onReset,
   templateName = 'Untitled',
   eventType = 'Event'
 }) {
@@ -431,6 +432,10 @@ export function SimplifiedTopBar({
         style={{ marginLeft: 8 }}
       >
         <X size={20} />
+      </IconButton>
+
+      <IconButton onClick={onReset} aria-label="Reset template">
+        <RotateCcw size={20} />
       </IconButton>
 
       {showThemeSelector && (

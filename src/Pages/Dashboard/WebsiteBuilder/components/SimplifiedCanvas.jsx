@@ -1,12 +1,11 @@
 // Create this file at: src/Pages/Dashboard/WebsiteBuilder/components/SimplifiedCanvas.jsx
-// src/Pages/Dashboard/WebsiteBuilder/components/SimplifiedCanvas.jsx
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useBuilderContext } from '../context/BuilderContext';
 import { useViewMode } from '../context/ViewModeContext';
 import { BrickRegistry } from '../bricks/BrickRegistry';
 import BlockSelectorModal from './BlockSelectorModal';
-import { Plus, Settings, Copy, Trash2, Menu, Grid, Layout } from 'lucide-react';
+import { Plus, Copy, Trash2 } from 'lucide-react';
 
 // Styled components
 const CanvasWrapper = styled.div`
@@ -100,28 +99,6 @@ const BlockLabel = styled.div`
   z-index: 2;
 `;
 
-const AddBlockButton = styled.button`
-  display: ${props => props.isPreview ? 'none' : 'flex'};
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: 12px;
-  background: white;
-  border: 2px dashed #ddd;
-  border-radius: 4px;
-  padding: 8px 16px;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: #666;
-  cursor: pointer;
-  
-  &:hover {
-    border-color: #2563eb;
-    color: #2563eb;
-  }
-`;
-
 const InsertBlockButton = styled.button`
   display: ${props => props.isPreview ? 'none' : 'flex'};
   width: 100%;
@@ -142,7 +119,6 @@ const InsertBlockButton = styled.button`
     color: #2563eb;
   }
 `;
-
 
 const SimplifiedCanvas = () => {
   const { 
@@ -166,11 +142,6 @@ const SimplifiedCanvas = () => {
     if (!isPreview) {
       setSelectedBrickId(blockId);
     }
-  };
-  
-  const handleAddBlock = (position = 'end') => {
-    setInsertPosition(position);
-    setShowBlockSelector(true);
   };
   
   const handleAddBlockAtIndex = (index) => {
@@ -250,23 +221,13 @@ const SimplifiedCanvas = () => {
         {data.map((block, index) => renderBlock(block, index))}
         
         {!isPreview && (
-          <>
-            <InsertBlockButton 
-              isPreview={isPreview}
-              onClick={() => handleAddBlockAtIndex(data.length)}
-            >
-              <Plus size={16} />
-              Add Block Here
-            </InsertBlockButton>
-            
-            <AddBlockButton
-              isPreview={isPreview}
-              onClick={() => handleAddBlock('end')}
-            >
-              <Plus size={16} />
-              Add New Block
-            </AddBlockButton>
-          </>
+          <InsertBlockButton 
+            isPreview={isPreview}
+            onClick={() => handleAddBlockAtIndex(data.length)}
+          >
+            <Plus size={16} />
+            Add Block Here
+          </InsertBlockButton>
         )}
       </CanvasWrapper>
       

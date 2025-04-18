@@ -16,6 +16,15 @@ export const BuilderProvider = ({ children }) => {
     footer: null
   });
 
+  // Debug logging for page data changes
+  useEffect(() => {
+    console.log('BuilderContext: Current page data changed:', {
+      pageId: currentPage?.id,
+      dataLength: pageData.length,
+      data: pageData
+    });
+  }, [currentPage, pageData]);
+
   // Add effect to load content when page changes
   useEffect(() => {
     if (currentPage?.id) {
@@ -24,13 +33,17 @@ export const BuilderProvider = ({ children }) => {
     }
   }, [currentPage?.id]);
 
-  // Modified setPageData to ensure synchronous updates
+  // Modified setPageData to ensure synchronous updates and proper data validation
   const setPageData = (newDataOrFn) => {
     const newData = typeof newDataOrFn === 'function' ? newDataOrFn(pageData) : newDataOrFn;
+    
     if (!Array.isArray(newData)) {
       console.error('setPageData: newData must be an array, received:', newData);
       return;
     }
+
+    console.log('BuilderContext: Setting new page data:', newData);
+    
     setUndoStack(prev => [...prev, pageData]);
     setRedoStack([]);
     updateCurrentPageData(newData);
