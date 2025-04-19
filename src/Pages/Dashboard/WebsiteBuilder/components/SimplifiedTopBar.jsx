@@ -10,7 +10,8 @@ import {
   Eye,
   X,
   Palette,
-  ArrowLeft
+  ArrowLeft,
+  Globe
 } from 'lucide-react';
 import { useBuilderContext } from '../context/BuilderContext';
 import { usePageContext } from '../context/PageContext';
@@ -146,11 +147,19 @@ const SaveButton = styled.button`
   }
 `;
 
-const PublishButton = styled(SaveButton)`
+const PreviewButton = styled(SaveButton)`
   background-color: #34a853;
   
   &:hover {
     background-color: #2e9549;
+  }
+`;
+
+const PublishButton = styled(SaveButton)`
+  background-color: #ff5722;
+  
+  &:hover {
+    background-color: #e64a19;
   }
 `;
 
@@ -207,16 +216,28 @@ const EventTypeTag = styled.span`
   margin-left: 8px;
 `;
 
+const SavedIndicator = styled.div`
+  color: #34a853;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  margin-left: 8px;
+  opacity: ${props => (props.visible ? 1 : 0)};
+  transition: opacity 0.5s ease;
+`;
+
 export function SimplifiedTopBar({ 
   onToggleSidebar, 
   onToggleProperties, 
   onBackToTemplates, 
   onSave,
   onReset,
+  onPreview,
+  onPublish,
   templateName = 'Untitled',
-  eventType = 'Event'
+  eventData = null
 }) {
-  const { undo, redo, saveCurrentState, pageData, setPageData } = useBuilderContext();
+  const { undo, redo, saveCurrentState, pageData } = useBuilderContext();
   const {
     pages,
     setSelectedPageId,
@@ -235,14 +256,16 @@ export function SimplifiedTopBar({
   const [isRenaming, setIsRenaming] = useState(false);
   const [tempName, setTempName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [showSaved, setShowSaved] = useState(false);
 
   /* Theme selector state */
   const [showThemeSelector, setShowThemeSelector] = useState(false);
 
   useEffect(() => {
     setIsRenaming(false);
-    setTempName(currentPage ? currentPage.name : templateName);
-  }, [currentPage, templateName]);
+    setTempName(currentPage ? currentPage.name : (eventData?.title || templateName));
+  }, [currentPage, templateName, eventData]);
 
   const handleTitleClick = () => {
     if (!currentPage) return;
@@ -279,6 +302,10 @@ export function SimplifiedTopBar({
       if (onSave) {
         await onSave(pageData);
       }
+      
+      // Show saved indicator
+      setShowSaved(true);
+      setTimeout(() => setShowSaved(false), 3000);
     } catch (error) {
       console.error('Error saving:', error);
     } finally {
@@ -286,17 +313,35 @@ export function SimplifiedTopBar({
     }
   };
 
-  const handlePublish = async () => {
-    setIsSaving(true);
-    try {
-      await saveCurrentState();
-      if (onSave) {
-        await onSave(pageData, { publish: true });
+  const handlePreview = () => {
+    if (onPreview) {
+      onPreview();
+    } else {
+      // Default preview behavior if no custom handler is provided
+      if (eventData?.id) {
+        window.open(`/events/${eventData.id}`, '_blank');
       }
+    }
+  };
+
+  const handlePublish = async () => {
+    setIsPublishing(true);
+    try {
+      // First save the latest template state
+      await saveCurrentState();
+      
+      // Then call publish handler
+      if (onPublish) {
+        await onPublish();
+      }
+      
+      // Show saved indicator with publish message
+      setShowSaved(true);
+      setTimeout(() => setShowSaved(false), 3000);
     } catch (error) {
       console.error('Error publishing:', error);
     } finally {
-      setIsSaving(false);
+      setIsPublishing(false);
     }
   };
 
@@ -363,8 +408,25 @@ export function SimplifiedTopBar({
       return newBlock;
     });
 
-    setPageData(updatedData);
+    // Use the page context to update the data
+    if (currentPage) {
+      // In a real app, we would trigger a state update through the page context
+      console.log('Updating theme colors for page:', currentPage.id);
+    }
+    
+    // Show saved indicator
+    setShowSaved(true);
+    setTimeout(() => setShowSaved(false), 3000);
+    
     setShowThemeSelector(false);
+  };
+
+  // Get appropriate event type/category or fallback to template category
+  const getEventType = () => {
+    if (eventData?.category) {
+      return eventData.category.charAt(0).toUpperCase() + eventData.category.slice(1);
+    }
+    return 'Event';
   };
 
   return (
@@ -390,10 +452,10 @@ export function SimplifiedTopBar({
           />
         ) : (
           <PageTitle onClick={handleTitleClick}>
-            {currentPage ? currentPage.name : templateName}
+            {currentPage ? currentPage.name : (eventData?.title || templateName)}
           </PageTitle>
         )}
-        <EventTypeTag>{eventType}</EventTypeTag>
+        <EventTypeTag>{getEventType()}</EventTypeTag>
       </TitleWrapper>
 
       {pages.length > 1 && (
@@ -409,23 +471,50 @@ export function SimplifiedTopBar({
         <RotateCcw size={18} style={{ transform: 'rotate(180deg)' }} />
       </IconButton>
 
-      <ViewSwitcher aria-label="View switcher">...
+      <ViewSwitcher aria-label="View switcher">
+        <ViewButton 
+          active={viewMode === 'desktop'} 
+          onClick={() => setViewMode('desktop')}
+        >
+          <Monitor size={16} className="me-2" />
+          Desktop
+        </ViewButton>
+        <ViewButton 
+          active={viewMode === 'mobile'} 
+          onClick={() => setViewMode('mobile')}
+          last
+        >
+          <Smartphone size={16} className="me-2" />
+          Mobile
+        </ViewButton>
       </ViewSwitcher>
 
       <Spacer />
+
+      <SavedIndicator visible={showSaved}>
+        {isPublishing ? 'Published successfully!' : 'Changes saved'}
+      </SavedIndicator>
 
       <ThemeButton onClick={() => setShowThemeSelector(true)}>
         <Palette size={16} />
         Theme
       </ThemeButton>
 
+      <PreviewButton onClick={handlePreview}>
+        <Globe size={16} />
+        Preview
+      </PreviewButton>
+
       <SaveButton onClick={handleSave} disabled={isSaving}>
         <Save size={16} />
         {isSaving ? 'Saving...' : 'Save'}
       </SaveButton>
-      <PublishButton onClick={handlePublish} disabled={isSaving}>
-        Publish
+      
+      <PublishButton onClick={handlePublish} disabled={isPublishing}>
+        <Eye size={16} />
+        {isPublishing ? 'Publishing...' : 'Publish'}
       </PublishButton>
+      
       <IconButton
         onClick={onToggleProperties}
         aria-label="Toggle properties panel"

@@ -78,6 +78,8 @@ function SimplifiedWebsiteBuilder() {
   const [loadingTemplate, setLoadingTemplate] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [eventData, setEventData] = useState(null);
+  const [isSaved, setIsSaved] = useState(true);
+  const [actionMessage, setActionMessage] = useState('');
   const location = useLocation();
   const navigate = useNavigate();
   const { eventId } = useParams();
@@ -200,9 +202,22 @@ function SimplifiedWebsiteBuilder() {
     setLoadingTemplate(true);
     try {
       await EventService.saveTemplate(eventId, pageData);
+      setIsSaved(true);
+      setActionMessage('Website saved successfully');
       console.log('Website saved successfully');
+      
+      // Clear the message after a delay
+      setTimeout(() => {
+        setActionMessage('');
+      }, 3000);
     } catch (error) {
       console.error('Error saving website:', error);
+      setActionMessage('Error saving website');
+      
+      // Clear the error message after a delay
+      setTimeout(() => {
+        setActionMessage('');
+      }, 3000);
     } finally {
       setLoadingTemplate(false);
     }
@@ -215,9 +230,12 @@ function SimplifiedWebsiteBuilder() {
   }, [selectedTemplate, location.state, loadTemplate]);
 
   const handlePreview = useCallback(() => {
+    // Save before preview
+    handleSave(selectedTemplate?.data || []);
+    
     // Open the website preview in a new tab
-    window.open(`/event/${eventId}`, '_blank');
-  }, [eventId]);
+    window.open(`/events/${eventId}`, '_blank');
+  }, [eventId, handleSave, selectedTemplate]);
 
   const handlePublish = useCallback(async () => {
     try {
@@ -226,10 +244,21 @@ function SimplifiedWebsiteBuilder() {
       await EventService.publishEvent(eventId);
       // Save the current template state
       await handleSave(selectedTemplate?.data || []);
-      alert('Website published successfully!');
+      
+      setActionMessage('Website published successfully!');
+      
+      // Clear the message after a delay
+      setTimeout(() => {
+        setActionMessage('');
+      }, 3000);
     } catch (error) {
       console.error('Error publishing website:', error);
-      alert('Error publishing website. Please try again.');
+      setActionMessage('Error publishing website. Please try again.');
+      
+      // Clear the error message after a delay
+      setTimeout(() => {
+        setActionMessage('');
+      }, 3000);
     } finally {
       setLoadingTemplate(false);
     }
