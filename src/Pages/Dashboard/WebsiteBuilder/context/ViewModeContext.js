@@ -3,8 +3,8 @@ import React, { createContext, useContext, useState } from 'react';
 
 export const ViewModeContext = createContext();
 
-export const ViewModeProvider = ({ children }) => {
-  const [viewMode, setViewMode] = useState('edit');
+export const ViewModeProvider = ({ children, initialMode = 'view' }) => {
+  const [viewMode, setViewMode] = useState(initialMode);
 
   return (
     <ViewModeContext.Provider value={{ viewMode, setViewMode }}>

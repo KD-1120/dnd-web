@@ -18,6 +18,7 @@ import MobileOptimized from './Pages/Features/MobileOptimized';
 // Dashboard Pages 
 import WebsiteBuilder from './Pages/Dashboard/WebsiteBuilder/SimplifiedWebsiteBuilder';
 import TemplateSelector from './Pages/Dashboard/WebsiteBuilder/components/TemplateSelector';
+import EventWebsiteView from './Pages/Dashboard/Other pages/EventWebsiteView';
 import EventCreation from './Pages/Dashboard/Other pages/EventCreation';
 import TicketScanner from './Pages/Dashboard/Other pages/TicketScanner';
 import PollCreation from './Pages/Dashboard/Other pages/PollCreation';
@@ -70,7 +71,7 @@ function AppRoutes() {
 
     return (
         <>
-            { !location.pathname.startsWith('/dashboard') && <Navbar /> }
+            { !location.pathname.startsWith('/dashboard') && !location.pathname.startsWith('/events/') && <Navbar /> }
             <MainContent>
                 <Routes>
                     {/* Public Pages */}
@@ -82,6 +83,10 @@ function AppRoutes() {
                     <Route path="/custom-links" element={<CustomLinks />} />
                     <Route path="/analytics-dashboard" element={<AnalyticalDashboard />} />
                     <Route path="/mobile-optimized" element={<MobileOptimized />} />
+
+                    {/* Event Website Routes */}
+                    <Route path="/events/:eventId" element={<EventWebsiteView />} />
+                    <Route path="/events/:eventId/preview" element={<EventWebsiteView preview={true} />} />
 
                     {/* Website Builder Route - Outside Dashboard Layout */}
                     <Route path="/dashboard/events/:eventId/website" element={<WebsiteBuilder />} />
@@ -121,33 +126,33 @@ function AppRoutes() {
                     <Route path="*" element={<div>Page Not Found</div>} />
                 </Routes>
             </MainContent>
-            { !location.pathname.startsWith('/dashboard') && <Footer /> }
+            { !location.pathname.startsWith('/dashboard') && !location.pathname.startsWith('/events/') && <Footer /> }
         </>
     );
 }
 
 const App = () => {
-  // Check if we're on a subdomain
-  const hostname = window.location.hostname;
-  const isSubdomain = hostname.split('.').length > 2;
+    // Check if we're on a subdomain
+    const hostname = window.location.hostname;
+    const isSubdomain = hostname.split('.').length > 2;
 
-  if (isSubdomain) {
-    // If we're on a subdomain, only render the event website
+    if (isSubdomain) {
+        // If we're on a subdomain, only render the event website
+        return (
+            <BrowserRouter>
+                <EventWebsiteRouter />
+            </BrowserRouter>
+        );
+    }
+
+    // Otherwise render the main application
     return (
-      <BrowserRouter>
-        <EventWebsiteRouter />
-      </BrowserRouter>
+        <BrowserRouter>
+            <AppWrapper>
+                <AppRoutes />
+            </AppWrapper>
+        </BrowserRouter>
     );
-  }
-
-  // Otherwise render the main application
-  return (
-    <BrowserRouter>
-      <AppWrapper>
-        <AppRoutes/>
-      </AppWrapper>
-    </BrowserRouter>
-  );
 };
 
 export default App;

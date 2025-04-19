@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import styled, { keyframes } from 'styled-components';
+import React, { useState, useEffect, useRef } from 'react';
+import styled, { keyframes, css } from 'styled-components';
 import {
   Menu,
   ChevronDown,
@@ -8,24 +8,32 @@ import {
   Monitor,
   Smartphone,
   Eye,
-  X,
   Palette,
   ArrowLeft,
-  Globe
+  Globe,
+  Settings
 } from 'lucide-react';
 import { useBuilderContext } from '../context/BuilderContext';
 import { usePageContext } from '../context/PageContext';
 import { useViewMode } from '../context/ViewModeContext';
 import ThemeSelector from './ThemeSelector';
 
-/* ------------------ Animations & Basic Styles ------------------ */
+/* ------------------ Animations & Shared Styles ------------------ */
 const fadeIn = keyframes`
   from { opacity: 0; }
   to { opacity: 1; }
 `;
 
+const focusRingStyles = css`
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+  }
+`;
+
+/* ------------------ Container Components ------------------ */
 const TopBarContainer = styled.div`
-  height: 60px;
+  height: 64px;
   background: #ffffff;
   border-bottom: 1px solid #e0e0e0;
   display: flex;
@@ -34,137 +42,133 @@ const TopBarContainer = styled.div`
   padding: 0 20px;
   font-family: 'Inter', sans-serif;
   animation: ${fadeIn} 0.3s ease-out;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 `;
 
-const IconButton = styled.button`
-  background: transparent;
-  border: none;
-  width: 36px;
-  height: 36px;
+/* ------------------ Tooltip Components ------------------ */
+const TooltipContainer = styled.div`
+  position: relative;
+  display: flex;
+`;
+
+const TooltipContent = styled.div`
+  position: absolute;
+  z-index: 10;
+  padding: 6px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: white;
+  background-color: #333;
   border-radius: 4px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+
+  &::before {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 5px solid #333;
+    top: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+`;
+
+/* ------------------ Button Components ------------------ */
+const BaseButton = styled.button`
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #5f6368;
-  margin: 0 2px;
   cursor: pointer;
-  transition: background-color 0.2s, color 0.2s;
-  &:hover {
-    background-color: #f1f3f4;
-  }
-`;
-
-const TitleWrapper = styled.div`
-  display: flex;
-  align-items: center;
-  margin: 0 12px;
-`;
-
-const PageTitle = styled.span`
-  font-size: 16px;
-  color: #202124;
-  font-weight: 500;
-  margin-right: 4px;
-  cursor: pointer;
-`;
-
-const InlineTitleInput = styled.input`
-  font-size: 16px;
-  font-weight: 500;
-  color: #202124;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  padding: 4px 8px;
-  width: 220px;
-  outline: none;
-  &:focus {
-    border-color: #999;
-  }
-`;
-
-const ViewSwitcher = styled.div`
-  display: flex;
-  border: 1px solid #dadce0;
-  border-radius: 4px;
-  height: 36px;
-  overflow: hidden;
-  margin-left: 16px;
-`;
-
-const ViewButton = styled.button`
-  background: ${props => (props.active ? '#f1f3f4' : '#fff')};
-  border: none;
-  border-right: ${props => (props.last ? 'none' : '1px solid #dadce0')};
-  padding: 0 12px;
-  font-size: 14px;
-  color: #5f6368;
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  &:hover {
-    background-color: ${props => (props.active ? '#f1f3f4' : '#f8f9fa')};
-  }
-`;
-
-const Spacer = styled.div`
-  flex: 1;
-`;
-
-const SaveButton = styled.button`
-  height: 40px;
-  background-color: #1a73e8;
-  border: none;
-  border-radius: 4px;
-  font-size: 14px;
-  font-weight: 500;
-  padding: 0 20px;
-  display: flex;
-  align-items: center;
-  color: white;
-  transition: background-color 0.2s;
-  margin-left: 16px;
-  cursor: pointer;
-  
-  svg {
-    margin-right: 8px;
-  }
-  
-  &:hover {
-    background-color: #1765cc;
-  }
+  transition: all 0.2s ease;
+  ${focusRingStyles}
   
   &:disabled {
-    background-color: #ccc;
+    opacity: 0.6;
     cursor: not-allowed;
   }
 `;
 
-const PreviewButton = styled(SaveButton)`
-  background-color: #34a853;
+const IconButtonElement = styled(BaseButton)`
+  background: transparent;
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
+  color: ${props => props.active ? '#3b82f6' : '#5f6368'};
+  background-color: ${props => props.active ? '#eff6ff' : 'transparent'};
+  margin: 0 2px;
   
   &:hover {
-    background-color: #2e9549;
+    background-color: ${props => props.active ? '#dbeafe' : '#f1f3f4'};
   }
 `;
 
-const PublishButton = styled(SaveButton)`
-  background-color: #ff5722;
+const ActionButtonElement = styled(BaseButton)`
+  height: 40px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 0 16px;
+  margin-left: 12px;
   
-  &:hover {
-    background-color: #e64a19;
-  }
+  ${props => {
+    switch(props.buttonType) {
+      case 'blue':
+        return css`
+          background-color: #1a73e8;
+          color: white;
+          &:hover:not(:disabled) {
+            background-color: #1765cc;
+          }
+        `;
+      case 'green':
+        return css`
+          background-color: #34a853;
+          color: white;
+          &:hover:not(:disabled) {
+            background-color: #2e9549;
+          }
+        `;
+      case 'orange':
+        return css`
+          background-color: #ff5722;
+          color: white;
+          &:hover:not(:disabled) {
+            background-color: #e64a19;
+          }
+        `;
+      default:
+        return css`
+          background-color: white;
+          color: #5f6368;
+          border: 1px solid #dadce0;
+          &:hover:not(:disabled) {
+            background-color: #f8f9fa;
+          }
+          ${props.active && css`
+            background-color: #f1f3f4;
+            border-color: #999;
+          `}
+        `;
+    }
+  }}
 `;
 
-const BackButton = styled.button`
+const BackButtonElement = styled(BaseButton)`
   display: flex;
   align-items: center;
   background: transparent;
-  border: none;
   color: #5f6368;
   font-size: 14px;
-  cursor: pointer;
   padding: 8px 12px;
   border-radius: 4px;
   margin-right: 8px;
@@ -178,26 +182,39 @@ const BackButton = styled.button`
   }
 `;
 
-const ThemeButton = styled.button`
-  height: 40px;
-  background-color: #ffffff;
-  border: 1px solid #dadce0;
-  border-radius: 4px;
-  font-size: 14px;
-  font-weight: 500;
-  padding: 0 20px;
+/* ------------------ Other UI Components ------------------ */
+const TitleWrapper = styled.div`
   display: flex;
   align-items: center;
-  transition: background-color 0.2s;
-  margin-left: 16px;
+  margin: 0 12px;
+`;
+
+const PageTitle = styled.span`
+  font-size: 16px;
+  color: #202124;
+  font-weight: 500;
+  margin-right: 4px;
   cursor: pointer;
-  
-  svg {
-    margin-right: 8px;
-  }
+  transition: color 0.2s;
   
   &:hover {
-    background-color: #f1f3f4;
+    color: #1a73e8;
+  }
+`;
+
+const InlineTitleInput = styled.input`
+  font-size: 16px;
+  font-weight: 500;
+  color: #202124;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 4px 8px;
+  width: 220px;
+  outline: none;
+  ${focusRingStyles}
+  
+  &:focus {
+    border-color: #999;
   }
 `;
 
@@ -210,15 +227,154 @@ const EventTypeTag = styled.span`
   margin-left: 8px;
 `;
 
+const ViewSwitcherContainer = styled.div`
+  display: flex;
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  height: 36px;
+  overflow: hidden;
+  margin-left: 16px;
+`;
+
+const ViewButton = styled(BaseButton)`
+  width: 50px;
+  text-align: center;
+  background: ${props => props.active ? '#f1f3f4' : '#fff'};
+  border: none;
+  border-right: ${props => props.last ? 'none' : '1px solid #dadce0'};
+  color: #5f6368;
+  
+  &:hover {
+    background-color: ${props => props.active ? '#f1f3f4' : '#f8f9fa'};
+  }
+`;
+
+const Spacer = styled.div`
+  flex: 1;
+`;
+
 const SavedIndicator = styled.div`
   color: #34a853;
   font-size: 13px;
   display: flex;
   align-items: center;
   margin-left: 8px;
-  opacity: ${props => (props.visible ? 1 : 0)};
+  opacity: ${props => props.visible ? 1 : 0};
   transition: opacity 0.5s ease;
 `;
+
+const PageSelectorIndicator = styled.div`
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  margin-left: 4px;
+  color: #5f6368;
+`;
+
+/* ------------------ Compound Components ------------------ */
+const Tooltip = ({ text, children }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+  
+  return (
+    <TooltipContainer
+      onMouseEnter={() => setShowTooltip(true)}
+      onMouseLeave={() => setShowTooltip(false)}
+    >
+      {children}
+      {showTooltip && <TooltipContent>{text}</TooltipContent>}
+    </TooltipContainer>
+  );
+};
+
+const IconButton = ({ onClick, ariaLabel, tooltip, children, active }) => (
+  <Tooltip text={tooltip}>
+    <IconButtonElement
+      onClick={onClick}
+      aria-label={ariaLabel}
+      active={active}
+    >
+      {children}
+    </IconButtonElement>
+  </Tooltip>
+);
+
+const ActionButton = ({ onClick, disabled, buttonType, tooltip, icon, children, active }) => (
+  <Tooltip text={tooltip}>
+    <ActionButtonElement
+      onClick={onClick}
+      disabled={disabled}
+      buttonType={buttonType}
+      active={active}
+    >
+      {icon && <span style={{ marginRight: '8px' }}>{icon}</span>}
+      {children}
+    </ActionButtonElement>
+  </Tooltip>
+);
+
+const BackButton = ({ onClick }) => (
+  <Tooltip text="Return to templates">
+    <BackButtonElement onClick={onClick}>
+      <ArrowLeft size={16} />
+      Back to Templates
+    </BackButtonElement>
+  </Tooltip>
+);
+
+const TitleSection = ({ 
+  isRenaming, 
+  tempName, 
+  handleTitleClick,
+  handleNameChange,
+  handleNameBlur,
+  handleNameKeyDown,
+  currentPage,
+  eventData,
+  templateName,
+  getEventType
+}) => (
+  <TitleWrapper>
+    {isRenaming ? (
+      <InlineTitleInput
+        type="text"
+        value={tempName}
+        onChange={handleNameChange}
+        onBlur={handleNameBlur}
+        onKeyDown={handleNameKeyDown}
+        autoFocus
+      />
+    ) : (
+      <Tooltip text="Rename page">
+        <PageTitle onClick={handleTitleClick}>
+          {currentPage ? currentPage.name : (eventData?.title || templateName)}
+        </PageTitle>
+      </Tooltip>
+    )}
+    <EventTypeTag>{getEventType()}</EventTypeTag>
+  </TitleWrapper>
+);
+
+const ViewSwitcherComponent = ({ viewMode, setViewMode }) => (
+  <ViewSwitcherContainer>
+    <Tooltip text="Desktop view">
+      <ViewButton
+        active={viewMode === 'desktop'}
+        onClick={() => setViewMode('desktop')}
+      >
+        <Monitor size={16} />
+      </ViewButton>
+    </Tooltip>
+    <Tooltip text="Mobile view">
+      <ViewButton
+        active={viewMode === 'mobile'}
+        onClick={() => setViewMode('mobile')}
+        last
+      >
+        <Smartphone size={16} />
+      </ViewButton>
+    </Tooltip>
+  </ViewSwitcherContainer>
+);
 
 export function SimplifiedTopBar({ 
   onToggleSidebar, 
@@ -228,6 +384,8 @@ export function SimplifiedTopBar({
   onReset,
   onPreview,
   onPublish,
+  onSettings,
+  showSettings,
   templateName = 'Untitled',
   eventData = null
 }) {
@@ -293,15 +451,15 @@ export function SimplifiedTopBar({
     }
   };
 
-  const handlePreview = () => {
-    if (onPreview) {
-      onPreview();
-    } else {
-      // Default preview behavior if no custom handler is provided
-      if (eventData?.id) {
-        window.open(`/events/${eventData.id}`, '_blank');
-      }
+  const handlePreview = async () => {
+    // Save current state before previewing
+    if (onSave) {
+      await onSave(pageData);
     }
+    
+    // Open preview in new tab
+    const previewUrl = `/events/${eventData?.id}/preview`;
+    window.open(previewUrl, '_blank');
   };
 
   const handlePublish = async () => {
@@ -414,63 +572,58 @@ export function SimplifiedTopBar({
 
   return (
     <TopBarContainer>
-      <IconButton onClick={onToggleSidebar} aria-label="Toggle sidebar">
-        <Menu size={20} />
-      </IconButton>
+      <Tooltip text="Toggle properties panel">
+        <IconButtonElement 
+          onClick={onToggleProperties} 
+          aria-label="Toggle properties panel"
+        >
+          <Menu size={20} />
+        </IconButtonElement>
+      </Tooltip>
 
-      <BackButton onClick={onBackToTemplates}>
-        <ArrowLeft size={16} />
-        Back to Templates
-      </BackButton>
+      <BackButton onClick={onBackToTemplates} />
 
-      <TitleWrapper>
-        {isRenaming ? (
-          <InlineTitleInput
-            type="text"
-            value={tempName}
-            onChange={handleNameChange}
-            onBlur={handleNameBlur}
-            onKeyDown={handleNameKeyDown}
-            autoFocus
-          />
-        ) : (
-          <PageTitle onClick={handleTitleClick}>
-            {currentPage ? currentPage.name : (eventData?.title || templateName)}
-          </PageTitle>
-        )}
-        <EventTypeTag>{getEventType()}</EventTypeTag>
-      </TitleWrapper>
+      <TitleSection
+        isRenaming={isRenaming}
+        tempName={tempName}
+        handleTitleClick={handleTitleClick}
+        handleNameChange={handleNameChange}
+        handleNameBlur={handleNameBlur}
+        handleNameKeyDown={handleNameKeyDown}
+        currentPage={currentPage}
+        eventData={eventData}
+        templateName={templateName}
+        getEventType={getEventType}
+      />
 
       {pages.length > 1 && (
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <ChevronDown size={18} color="#5f6368" />
-        </div>
+        <Tooltip text="Select page">
+          <PageSelectorIndicator>
+            <ChevronDown size={18} />
+          </PageSelectorIndicator>
+        </Tooltip>
       )}
 
-      <IconButton onClick={undo} aria-label="Undo">
+      <IconButton 
+        onClick={undo} 
+        ariaLabel="Undo"
+        tooltip="Undo"
+      >
         <RotateCcw size={18} />
       </IconButton>
-      <IconButton onClick={redo} aria-label="Redo">
+      
+      <IconButton 
+        onClick={redo} 
+        ariaLabel="Redo"
+        tooltip="Redo"
+      >
         <RotateCcw size={18} style={{ transform: 'rotate(180deg)' }} />
       </IconButton>
 
-      <ViewSwitcher aria-label="View switcher">
-        <ViewButton 
-          active={viewMode === 'desktop'} 
-          onClick={() => setViewMode('desktop')}
-        >
-          <Monitor size={16} className="me-2" />
-          Desktop
-        </ViewButton>
-        <ViewButton 
-          active={viewMode === 'mobile'} 
-          onClick={() => setViewMode('mobile')}
-          last
-        >
-          <Smartphone size={16} className="me-2" />
-          Mobile
-        </ViewButton>
-      </ViewSwitcher>
+      <ViewSwitcherComponent 
+        viewMode={viewMode} 
+        setViewMode={setViewMode} 
+      />
 
       <Spacer />
 
@@ -478,35 +631,55 @@ export function SimplifiedTopBar({
         {isPublishing ? 'Published successfully!' : 'Changes saved'}
       </SavedIndicator>
 
-      <ThemeButton onClick={() => setShowThemeSelector(true)}>
-        <Palette size={16} />
-        Theme
-      </ThemeButton>
-
-      <PreviewButton onClick={handlePreview}>
-        <Globe size={16} />
-        Preview
-      </PreviewButton>
-
-      <SaveButton onClick={handleSave} disabled={isSaving}>
-        <Save size={16} />
-        {isSaving ? 'Saving...' : 'Save'}
-      </SaveButton>
-      
-      <PublishButton onClick={handlePublish} disabled={isPublishing}>
-        <Eye size={16} />
-        {isPublishing ? 'Publishing...' : 'Publish'}
-      </PublishButton>
-      
-      <IconButton
-        onClick={onToggleProperties}
-        aria-label="Toggle properties panel"
-        style={{ marginLeft: 8 }}
+      <ActionButton
+        onClick={() => setShowThemeSelector(true)}
+        buttonType="default"
+        tooltip="Change theme"
+        icon={<Palette size={16} />}
       >
-        <X size={20} />
-      </IconButton>
+      </ActionButton>
 
-      <IconButton onClick={onReset} aria-label="Reset template">
+      <ActionButton
+        onClick={onSettings}
+        buttonType="default"
+        tooltip="Settings"
+        icon={<Settings size={16} />}
+        active={showSettings}
+      />
+
+      <ActionButton
+        onClick={handlePreview}
+        buttonType="green"
+        tooltip="Preview page"
+        icon={<Globe size={16} />}
+      >
+      </ActionButton>
+
+      <ActionButton
+        onClick={handleSave}
+        disabled={isSaving}
+        buttonType="blue"
+        tooltip="Save changes"
+        icon={<Save size={16} />}
+      >
+        {isSaving ? 'Saving...' : ''}
+      </ActionButton>
+      
+      <ActionButton
+        onClick={handlePublish}
+        disabled={isPublishing}
+        buttonType="orange"
+        tooltip="Publish page"
+        icon={<Eye size={16} />}
+      >
+        {isPublishing ? 'Publishing...' : ''}
+      </ActionButton>
+      
+      <IconButton 
+        onClick={onReset} 
+        ariaLabel="Reset template"
+        tooltip="Reset to default"
+      >
         <RotateCcw size={20} />
       </IconButton>
 

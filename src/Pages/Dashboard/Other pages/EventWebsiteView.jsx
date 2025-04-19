@@ -4,7 +4,7 @@ import { Spinner, Alert, Button } from 'react-bootstrap';
 import styled from 'styled-components';
 import { BrickRegistry } from '../WebsiteBuilder/bricks/BrickRegistry';
 import { EventService } from '../WebsiteBuilder/services/EventService';
-import { SubdomainService } from '../WebsiteBuilder/services/SubdomainServices';
+import { ViewModeProvider } from '../WebsiteBuilder/context/ViewModeContext';
 import { ArrowLeft } from 'lucide-react';
 
 const PreviewBanner = styled.div`
@@ -48,7 +48,6 @@ const ErrorContainer = styled.div`
 const EventWebsiteView = ({ preview = false }) => {
   const { eventId } = useParams();
   const location = useLocation();
-  const [event, setEvent] = useState(null);
   const [template, setTemplate] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -67,8 +66,6 @@ const EventWebsiteView = ({ preview = false }) => {
           setLoading(false);
           return;
         }
-        
-        setEvent(eventData);
         
         // Check if the event is published (unless in preview mode)
         if (!preview) {
@@ -165,7 +162,7 @@ const EventWebsiteView = ({ preview = false }) => {
   }
 
   return (
-    <>
+    <ViewModeProvider initialMode={preview ? 'preview' : 'view'}>
       {preview && (
         <PreviewBanner>
           <div>
@@ -187,7 +184,7 @@ const EventWebsiteView = ({ preview = false }) => {
       <WebsiteContainer preview={preview}>
         {template.map(block => renderBlock(block))}
       </WebsiteContainer>
-    </>
+    </ViewModeProvider>
   );
 };
 

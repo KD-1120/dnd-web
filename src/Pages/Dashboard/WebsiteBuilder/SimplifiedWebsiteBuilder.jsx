@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import SimplifiedCanvas from './components/SimplifiedCanvas';
 import SimplifiedPropertiesSidebar from './components/SimplifiedPropertiesSidebar';
 import SimplifiedTopBar from './components/SimplifiedTopBar';
+import WebsiteSettingsPanel from './components/WebsiteSettingsPanel';
 import { EventService } from './services/EventService';
 import { TemplateRegistry } from './templates';
 import { BuilderProvider } from './context/BuilderContext';
@@ -19,6 +20,8 @@ export const SimplifiedWebsiteBuilder = () => {
   const [selectedBlock, setSelectedBlock] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(true);
 
   const loadEventData = useCallback(async () => {
     try {
@@ -95,6 +98,14 @@ export const SimplifiedWebsiteBuilder = () => {
     }
   };
 
+  const handleOpenSettings = () => {
+    setShowSettings(prev => !prev); // Toggle settings panel
+  };
+
+  const handleToggleSidebar = () => {
+    setShowSidebar(prev => !prev);
+  };
+
   const handleBackToTemplates = () => {
     navigate('/dashboard/events/website-templates', { 
       state: { eventId, isNewEvent: false }
@@ -115,10 +126,12 @@ export const SimplifiedWebsiteBuilder = () => {
         <BuilderProvider>
           <div className="simplified-builder" style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
             <SimplifiedTopBar 
-              onToggleSidebar={() => {}}
-              onToggleProperties={() => {}}
+              onToggleSidebar={handleToggleSidebar}
+              onToggleProperties={handleToggleSidebar}
               onBackToTemplates={handleBackToTemplates}
               onPublish={handlePublish}
+              onSettings={handleOpenSettings}
+              showSettings={showSettings}
               eventData={eventData}
               templateName={template?.name || 'Untitled'}
             />
@@ -129,12 +142,21 @@ export const SimplifiedWebsiteBuilder = () => {
                   onBlockSelect={setSelectedBlock}
                 />
               </div>
-              <div style={{ width: '320px', borderLeft: '1px solid #eee' }}>
-                <SimplifiedPropertiesSidebar
-                  selectedBlock={selectedBlock}
-                  onTemplateChange={handleTemplateChange}
-                />
-              </div>
+              {showSidebar && (
+                <div style={{ width: '320px', borderLeft: '1px solid #eee' }}>
+                  {showSettings ? (
+                    <WebsiteSettingsPanel
+                      eventId={eventId}
+                      onClose={() => setShowSettings(false)}
+                    />
+                  ) : (
+                    <SimplifiedPropertiesSidebar
+                      selectedBlock={selectedBlock}
+                      onTemplateChange={handleTemplateChange}
+                    />
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </BuilderProvider>
