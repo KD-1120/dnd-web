@@ -134,6 +134,7 @@ const EventCreation = () => {
   const [success, setSuccess] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [eventData, setEventData] = useState({
+    // Basic Details
     title: '',
     description: '',
     startDate: '',
@@ -142,23 +143,54 @@ const EventCreation = () => {
     capacity: '',
     category: 'conference',
     isPublic: true,
+
+    // Required for Template
     organizerName: '',
     contactEmail: '',
+    bgImage: '', // For hero section
     schedule: [
       {
         day: 'Day 1',
         date: '',
-        sessions: []
+        sessions: [
+          {
+            id: '1',
+            time: '',
+            duration: '',
+            title: '',
+            description: '',
+            location: '',
+            speakers: [
+              {
+                name: '',
+                role: '',
+                avatar: ''
+              }
+            ]
+          }
+        ]
       }
     ],
     ticketTypes: [
       {
-        name: 'General Admission',
-        price: '0',
-        quantity: '100',
-        description: 'Standard entry to the event'
+        id: 'early-bird',
+        name: 'Early Bird',
+        price: '',
+        description: '',
+        maxPerOrder: 2,
+        remainingTickets: 50,
+        validUntil: '' // Early bird deadline
       }
-    ]
+    ],
+    // Template specific fields
+    heroSubtitle: '',
+    eventHighlights: '',
+    socialLinks: {
+      facebook: '',
+      twitter: '',
+      instagram: '',
+      linkedin: ''
+    }
   });
 
   const handleSubmit = async (e) => {
@@ -198,19 +230,47 @@ const EventCreation = () => {
         )
       );
 
-      setSuccess('Event created successfully! Redirecting to template selection...');
-
-      // Store event data in session storage for template initialization
-      sessionStorage.setItem('newEventData', JSON.stringify({
+      // Format data for template initialization
+      const templateData = {
         title: eventData.title,
         description: eventData.description,
         startDate: eventData.startDate,
         endDate: eventData.endDate,
+        startDateFormatted: new Date(eventData.startDate).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric'
+        }),
+        endDateFormatted: new Date(eventData.endDate).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric'
+        }),
         venue: eventData.venue,
+        capacity: eventData.capacity,
         organizerName: eventData.organizerName,
         contactEmail: eventData.contactEmail,
-        schedule: eventData.schedule
-      }));
+        schedule: eventData.schedule.map(day => ({
+          ...day,
+          sessions: day.sessions.map(session => ({
+            ...session,
+            duration: `${session.duration}min`
+          }))
+        })),
+        ticketTypes: eventData.ticketTypes.map(ticket => ({
+          ...ticket,
+          price: parseFloat(ticket.price)
+        })),
+        currentYear: new Date().getFullYear(),
+        heroSubtitle: eventData.heroSubtitle || 'Join us for an amazing event',
+        eventHighlights: eventData.eventHighlights,
+        socialLinks: eventData.socialLinks
+      };
+
+      setSuccess('Event created successfully! Redirecting to template selection...');
+
+      // Store event data in session storage for template initialization
+      sessionStorage.setItem('newEventData', JSON.stringify(templateData));
 
       // Redirect to template selection with event ID
       setTimeout(() => {
@@ -280,9 +340,39 @@ const EventCreation = () => {
     }));
   };
 
+  const canProceedToNextStep = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          eventData.title &&
+          eventData.description &&
+          eventData.startDate &&
+          eventData.endDate &&
+          eventData.venue &&
+          eventData.capacity &&
+          eventData.organizerName &&
+          eventData.contactEmail
+        );
+      case 2:
+        return eventData.ticketTypes.every(ticket => 
+          ticket.name &&
+          ticket.price &&
+          ticket.description &&
+          ticket.maxPerOrder &&
+          ticket.remainingTickets
+        );
+      default:
+        return true;
+    }
+  };
+
   const nextStep = () => {
-    setCurrentStep(prev => prev + 1);
-    window.scrollTo(0, 0);
+    if (canProceedToNextStep()) {
+      setCurrentStep(prev => prev + 1);
+      window.scrollTo(0, 0);
+    } else {
+      setError('Please fill in all required fields before proceeding.');
+    }
   };
 
   const prevStep = () => {
@@ -441,6 +531,48 @@ const EventCreation = () => {
                         onChange={handleInputChange}
                         placeholder="Enter max attendees"
                         required
+                      />
+                    </Form.Group>
+                  </Col>
+                </Row>
+
+                <Row>
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <FormLabel>Organizer Name *</FormLabel>
+                      <Form.Control
+                        type="text"
+                        name="organizerName"
+                        value={eventData.organizerName}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </Form.Group>
+                  </Col>
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <FormLabel>Contact Email *</FormLabel>
+                      <Form.Control
+                        type="email"
+                        name="contactEmail"
+                        value={eventData.contactEmail}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </Form.Group>
+                  </Col>
+                </Row>
+
+                <Row>
+                  <Col md={12}>
+                    <Form.Group className="mb-3">
+                      <FormLabel>Hero Section Subtitle</FormLabel>
+                      <Form.Control
+                        type="text"
+                        name="heroSubtitle"
+                        value={eventData.heroSubtitle}
+                        onChange={handleInputChange}
+                        placeholder="A catchy subtitle for your event"
                       />
                     </Form.Group>
                   </Col>

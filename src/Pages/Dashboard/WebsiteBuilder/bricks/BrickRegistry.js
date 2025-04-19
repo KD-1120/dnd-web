@@ -11,6 +11,7 @@ import { ScheduleAgendaBrickComponent, ScheduleAgendaBrickInspector } from './Sc
 import { TicketSalesWidgetBrickComponent, TicketSalesWidgetBrickInspector } from './TicketSalesWidgetBrick';
 import { GoogleMapsBrickComponent, GoogleMapsBrickInspector } from './GoogleMapsBrick';
 import { SocialMediaSharingBrickComponent, SocialMediaSharingBrickInspector } from './SocialMediaSharingBrick';
+import { CountdownTimerBrickComponent, CountdownTimerBrickInspector } from './CountdownTimerBrick';
 
 // Brick metadata map
 export const brickMeta = {
@@ -22,7 +23,8 @@ export const brickMeta = {
   socialMediaSharing: { icon: Share, category: 'Social', displayName: 'Social Media' },
   googleMaps: { icon: Map, category: 'Location', displayName: 'Google Maps' },
   ticketSalesWidget: { icon: Ticket, category: 'Events', displayName: 'Ticket Sales' },
-  scheduleAgenda: { icon: Calendar, category: 'Events', displayName: 'Schedule' }
+  scheduleAgenda: { icon: Calendar, category: 'Events', displayName: 'Schedule' },
+  countdownTimer: { icon: Clock, category: 'Events', displayName: 'Countdown Timer' }
 };
 
 // BrickRegistry keeps track of all available brick types and their configurations
@@ -89,6 +91,13 @@ export const BrickRegistry = {
     label: brickMeta.socialMediaSharing.displayName,
     component: SocialMediaSharingBrickComponent,
     inspector: SocialMediaSharingBrickInspector
+  },
+  countdownTimer: {
+    type: 'countdownTimer',
+    category: brickMeta.countdownTimer.category,
+    label: brickMeta.countdownTimer.displayName,
+    component: CountdownTimerBrickComponent,
+    inspector: CountdownTimerBrickInspector
   }
 };
 

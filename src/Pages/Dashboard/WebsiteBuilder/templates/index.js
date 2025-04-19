@@ -2,7 +2,6 @@ import { TemplateRegistry } from './TemplateRegistry';
 import { eventTemplate } from './event-template';
 import { workshopTemplate } from './workshop-template';
 import { conferenceTemplate } from './conference-template';
-import { concertTemplate } from './Concert/index';
 
 // Register all templates
 TemplateRegistry.registerTemplate(eventTemplate);
@@ -17,7 +16,6 @@ export * from './conference-template';
 export const templates = {
   conference: conferenceTemplate,
   event: eventTemplate,
-  concert: concertTemplate,
   // Add other templates
 };
 
@@ -30,7 +28,6 @@ export const templateList = [
     thumbnail: '/api/placeholder/400/250',
     category: 'Conferences'
   },
-  concertTemplate,
   eventTemplate,
   // Add other templates to the list
   {
