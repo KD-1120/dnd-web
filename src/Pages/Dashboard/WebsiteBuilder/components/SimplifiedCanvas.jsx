@@ -1,5 +1,5 @@
 // Create this file at: src/Pages/Dashboard/WebsiteBuilder/components/SimplifiedCanvas.jsx
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import styled from 'styled-components';
 import { useBuilderContext } from '../context/BuilderContext';
 import { useViewMode } from '../context/ViewModeContext';
@@ -120,9 +120,14 @@ const InsertBlockButton = styled.button`
   }
 `;
 
-const SimplifiedCanvas = () => {
+export const SimplifiedCanvas = ({ 
+  template,
+  viewMode = 'edit',
+  isPreview = false,
+  onBlockSelect = () => {}
+}) => {
   const { 
-    pageData, 
+    pageData = template?.data || [], 
     setPageData, 
     selectedBrickId, 
     setSelectedBrickId,
@@ -131,25 +136,30 @@ const SimplifiedCanvas = () => {
     removeBrick,
     getPreviewData
   } = useBuilderContext();
-  const { viewMode } = useViewMode();
+  
+  const { viewMode: contextViewMode } = useViewMode();
   const [showBlockSelector, setShowBlockSelector] = useState(false);
   const [insertPosition, setInsertPosition] = useState(null);
   
-  const isPreview = viewMode === 'preview';
-  const data = isPreview ? getPreviewData() : pageData;
+  const isPreviewMode = viewMode === 'preview';
+  const displayData = useMemo(() => 
+    isPreviewMode ? getPreviewData() : (pageData || []),
+    [isPreviewMode, getPreviewData, pageData]
+  );
   
-  const handleBlockSelect = (blockId) => {
-    if (!isPreview) {
+  const handleBlockSelect = useCallback((blockId) => {
+    if (!isPreviewMode) {
       setSelectedBrickId(blockId);
+      onBlockSelect?.(blockId);
     }
-  };
+  }, [isPreviewMode, setSelectedBrickId, onBlockSelect]);
   
-  const handleAddBlockAtIndex = (index) => {
+  const handleAddBlockAtIndex = useCallback((index) => {
     setInsertPosition(index);
     setShowBlockSelector(true);
-  };
+  }, []);
   
-  const handleBlockTypeSelect = (blockType) => {
+  const handleBlockTypeSelect = useCallback((blockType) => {
     if (insertPosition === 'end') {
       addBrickToRoot(blockType);
     } else if (typeof insertPosition === 'number') {
@@ -159,71 +169,63 @@ const SimplifiedCanvas = () => {
         props: {}
       };
       
-      const newPageData = [...pageData];
+      const newPageData = [...displayData];
       newPageData.splice(insertPosition, 0, newBrick);
       setPageData(newPageData);
     }
     
     setShowBlockSelector(false);
     setInsertPosition(null);
-  };
+  }, [insertPosition, displayData, addBrickToRoot, setPageData]);
   
-  const renderBlock = (block, index) => {
-    const isSelected = selectedBrickId === block.id;
+  const renderBlock = useCallback((block, index) => {
     const BrickComponent = BrickRegistry[block.type]?.component;
     
-    if (!BrickComponent) return null;
-    
+    if (!BrickComponent) {
+      console.warn(`No brick component found for type: ${block.type}`);
+      return null;
+    }
+
     return (
-      <React.Fragment key={block.id}>
-        {!isPreview && (
-          <InsertBlockButton 
-            isPreview={isPreview}
-            onClick={() => handleAddBlockAtIndex(index)}
-          >
-            <Plus size={16} />
-            Add Block Here
-          </InsertBlockButton>
-        )}
+      <BlockWrapper 
+        key={block.id || index}
+        isPreview={isPreviewMode}
+      >
+        <BrickComponent
+          brick={block}
+          onSelect={handleBlockSelect}
+          isSelected={selectedBrickId === block.id}
+        />
         
-        <BlockWrapper
-          isPreview={isPreview}
-          onClick={() => handleBlockSelect(block.id)}
-        >
-          {isSelected && !isPreview && (
-            <>
-              <SelectedBlockOverlay />
+        {!isPreviewMode && selectedBrickId === block.id && (
+          <>
+            <SelectedBlockOverlay />
+            <BlockControls>
               <BlockLabel>
                 {BrickRegistry[block.type]?.label || block.type}
               </BlockLabel>
-              <BlockControls>
-                <BlockButton onClick={() => duplicateBrick(block.id)} title="Duplicate">
-                  <Copy size={16} />
-                </BlockButton>
-                <BlockButton onClick={() => removeBrick(block.id)} title="Delete">
-                  <Trash2 size={16} />
-                </BlockButton>
-              </BlockControls>
-            </>
-          )}
-          <BrickComponent
-            brick={block}
-            onSelect={handleBlockSelect}
-          />
-        </BlockWrapper>
-      </React.Fragment>
+              <BlockButton onClick={() => duplicateBrick(block.id)} title="Duplicate">
+                <Copy size={14} />
+              </BlockButton>
+              <BlockButton onClick={() => removeBrick(block.id)} title="Delete">
+                <Trash2 size={14} />
+              </BlockButton>
+            </BlockControls>
+          </>
+        )}
+      </BlockWrapper>
     );
-  };
-  
+  }, [selectedBrickId, isPreviewMode, handleBlockSelect, duplicateBrick, removeBrick]);
+
   return (
     <>
-      <CanvasWrapper viewMode={viewMode}>
-        {data.map((block, index) => renderBlock(block, index))}
+      <CanvasWrapper viewMode={contextViewMode}>
+        {displayData.map((block, index) => renderBlock(block, index))}
         
-        {!isPreview && (
+        {!isPreviewMode && (
           <InsertBlockButton 
-            isPreview={isPreview}
-            onClick={() => handleAddBlockAtIndex(data.length)}
+            isPreview={isPreviewMode}
+            onClick={() => handleAddBlockAtIndex(displayData.length)}
           >
             <Plus size={16} />
             Add Block Here
@@ -236,6 +238,40 @@ const SimplifiedCanvas = () => {
         onClose={() => setShowBlockSelector(false)}
         onBlockSelect={handleBlockTypeSelect}
       />
+      
+      <style jsx>{`
+        .canvas-container {
+          width: 100%;
+          min-height: 100vh;
+          background: #ffffff;
+        }
+
+        .canvas-container.mobile {
+          max-width: 425px;
+          margin: 0 auto;
+          box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .block-wrapper {
+          position: relative;
+        }
+
+        .block-wrapper.editable {
+          cursor: pointer;
+        }
+
+        .block-wrapper.editable:hover {
+          outline: 2px solid #3182ce;
+        }
+
+        .empty-canvas {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 100vh;
+          color: #718096;
+        }
+      `}</style>
     </>
   );
 };

@@ -6,11 +6,7 @@ import { BrickRegistry } from '../bricks/BrickRegistry';
 import { 
   Palette, 
   LayoutGrid, 
-  Image, 
-  Link, 
-  Type, 
   Box, 
-  CornerUpLeft, 
   ChevronRight, 
   ChevronDown,
   AlignLeft,
@@ -18,14 +14,12 @@ import {
   AlignRight,
   AlignJustify,
   BoldIcon,
-  ItalicIcon,
-  Underline,
   Sliders,
-  Move,
   Layers,
   ArrowDownToLine,
   ArrowUpToLine,
-  Trash2
+  Trash2,
+  Type
 } from 'lucide-react';
 
 const SidebarContainer = styled.div`
@@ -53,25 +47,6 @@ const Title = styled.h3`
   font-weight: 600;
   margin: 0;
   color: #111827;
-`;
-
-const BackButton = styled.button`
-  display: flex;
-  align-items: center;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  color: #6b7280;
-  font-size: 13px;
-  padding: 0;
-  
-  &:hover {
-    color: #111827;
-  }
-  
-  svg {
-    margin-right: 4px;
-  }
 `;
 
 const EmptyState = styled.div`
@@ -380,11 +355,9 @@ const ColorSwatch = styled.button`
   }
 `;
 
-// Main component
-const SimplifiedPropertiesSidebar = () => {
+const SimplifiedPropertiesSidebar = ({ selectedBlock, onTemplateChange }) => {
   const { 
     selectedBrickId, 
-    pageData, 
     updateBrickProps, 
     getBrickById,
     duplicateBrick,
@@ -401,13 +374,7 @@ const SimplifiedPropertiesSidebar = () => {
     content: false,
     effects: false
   });
-  
-  // Get the selected brick
-  const selectedBrick = useMemo(
-    () => getBrickById(selectedBrickId),
-    [selectedBrickId, getBrickById]
-  );
-  
+
   // Toggle accordion sections
   const toggleSection = (section) => {
     setOpenSections(prev => ({
@@ -415,6 +382,18 @@ const SimplifiedPropertiesSidebar = () => {
       [section]: !prev[section]
     }));
   };
+  
+  // Get the selected brick
+  const selectedBrick = useMemo(
+    () => {
+      if (!getBrickById || typeof getBrickById !== 'function') {
+        console.warn('getBrickById is not available or is not a function');
+        return null;
+      }
+      return getBrickById(selectedBrickId);
+    },
+    [selectedBrickId, getBrickById]
+  );
   
   if (!selectedBrick) {
     return (
@@ -812,9 +791,6 @@ const SimplifiedPropertiesSidebar = () => {
             Effects
             {openSections.effects ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
           </AccordionHeader>
-          <AccordionBody isOpen={openSections.effects}>
-            {effectProps.map(([propName, field]) => renderField(propName, field))}
-          </AccordionBody>
         </AccordionSection>
       )}
       
@@ -875,4 +851,5 @@ const SimplifiedPropertiesSidebar = () => {
   );
 };
 
+export { SimplifiedPropertiesSidebar };
 export default SimplifiedPropertiesSidebar;

@@ -1,23 +1,19 @@
 // src/Pages/Dashboard/WebsiteBuilder/bricks/BrickRegistry.js
-import React from 'react';
-import { Layout, Type, FileText, Image, Square, Box, Grid } from 'lucide-react';
-import { TitleBrickComponent, TitleBrickInspector } from './TitleBrick';
-import { TextBrickComponent, TextBrickInspector } from './TextBrick';
-import { ButtonBrickComponent, ButtonBrickInspector } from './ButtonBrick';
-import { ImageBrickComponent, ImageBrickInspector } from './ImageBrick';
-import { ContainerBrickComponent, ContainerBrickInspector } from './ContainerBrick';
-import { SocialMediaSharingBrickComponent, SocialMediaSharingBrickInspector } from './SocialMediaSharingBrick';
-import { GoogleMapsBrickComponent, GoogleMapsBrickInspector } from './GoogleMapsBrick';
-import { TicketSalesWidgetBrickComponent, TicketSalesWidgetBrickInspector } from './TicketSalesWidgetBrick';
-import { ScheduleAgendaBrickComponent, ScheduleAgendaBrickInspector } from './ScheduleAgendaBrick';
-import { CountdownTimerBrickComponent, CountdownTimerBrickInspector } from './CountdownTimerBrick';
-
-
+import { Layout, Type, FileText, Image, Square } from 'lucide-react';
 import { Calendar, Clock, Share, Map, Ticket, Users } from 'lucide-react';
 
-// This object maps brick types to their icons and categories
-// Could be enhanced to be part of each brick's metadata
-const brickMeta = {
+import { ContainerBrickComponent, ContainerBrickInspector } from './ContainerBrick';
+import { TextBrickComponent, TextBrickInspector } from './TextBrick';
+import { TitleBrickComponent, TitleBrickInspector } from './TitleBrick';
+import { ImageBrickComponent, ImageBrickInspector } from './ImageBrick';
+import { ButtonBrickComponent, ButtonBrickInspector } from './ButtonBrick';
+import { ScheduleAgendaBrickComponent, ScheduleAgendaBrickInspector } from './ScheduleAgendaBrick';
+import { TicketSalesWidgetBrickComponent, TicketSalesWidgetBrickInspector } from './TicketSalesWidgetBrick';
+import { GoogleMapsBrickComponent, GoogleMapsBrickInspector } from './GoogleMapsBrick';
+import { SocialMediaSharingBrickComponent, SocialMediaSharingBrickInspector } from './SocialMediaSharingBrick';
+
+// Brick metadata map
+export const brickMeta = {
   title: { icon: Type, category: 'Text', displayName: 'Title' },
   text: { icon: FileText, category: 'Text', displayName: 'Text' },
   button: { icon: Square, category: 'Components', displayName: 'Button' },
@@ -26,112 +22,112 @@ const brickMeta = {
   socialMediaSharing: { icon: Share, category: 'Social', displayName: 'Social Media' },
   googleMaps: { icon: Map, category: 'Location', displayName: 'Google Maps' },
   ticketSalesWidget: { icon: Ticket, category: 'Events', displayName: 'Ticket Sales' },
-  scheduleAgenda: { icon: Calendar, category: 'Events', displayName: 'Schedule' },
-  countdownTimer: { icon: Clock, category: 'Events', displayName: 'Countdown Timer' },
-  speakerGallery: { icon: Users, category: 'People', displayName: 'Speaker Gallery' }
+  scheduleAgenda: { icon: Calendar, category: 'Events', displayName: 'Schedule' }
 };
 
-// Dynamically generate the brick registry
+// BrickRegistry keeps track of all available brick types and their configurations
 export const BrickRegistry = {
-  title: {
-    component: TitleBrickComponent,
-    inspector: TitleBrickInspector,
-    label: brickMeta.title.displayName,
-    icon: brickMeta.title.icon,
-    category: brickMeta.title.category
-  },
   text: {
-    component: TextBrickComponent,
-    inspector: TextBrickInspector,
+    type: 'text',
+    category: brickMeta.text.category,
     label: brickMeta.text.displayName,
-    icon: brickMeta.text.icon,
-    category: brickMeta.text.category
+    component: TextBrickComponent,
+    inspector: TextBrickInspector
   },
-  button: {
-    component: ButtonBrickComponent,
-    inspector: ButtonBrickInspector,
-    label: brickMeta.button.displayName,
-    icon: brickMeta.button.icon,
-    category: brickMeta.button.category
+  title: {
+    type: 'title',
+    category: brickMeta.title.category,
+    label: brickMeta.title.displayName,
+    component: TitleBrickComponent,
+    inspector: TitleBrickInspector
   },
   image: {
-    component: ImageBrickComponent,
-    inspector: ImageBrickInspector,
+    type: 'image',
+    category: brickMeta.image.category,
     label: brickMeta.image.displayName,
-    icon: brickMeta.image.icon,
-    category: brickMeta.image.category
+    component: ImageBrickComponent,
+    inspector: ImageBrickInspector
   },
   container: {
-    component: ContainerBrickComponent,
-    inspector: ContainerBrickInspector,
+    type: 'container',
+    category: brickMeta.container.category,
     label: brickMeta.container.displayName,
-    icon: brickMeta.container.icon,
-    category: brickMeta.container.category
+    component: ContainerBrickComponent,
+    inspector: ContainerBrickInspector
   },
-  socialMediaSharing: {
-    component: SocialMediaSharingBrickComponent,
-    inspector: SocialMediaSharingBrickInspector,
-    label: brickMeta.socialMediaSharing.displayName,
-    icon: brickMeta.socialMediaSharing.icon,
-    category: brickMeta.socialMediaSharing.category
-  },
-  googleMaps: {
-    component: GoogleMapsBrickComponent,
-    inspector: GoogleMapsBrickInspector,
-    label: brickMeta.googleMaps.displayName,
-    icon: brickMeta.googleMaps.icon,
-    category: brickMeta.googleMaps.category
-  },
-  ticketSalesWidget: {
-    component: TicketSalesWidgetBrickComponent,
-    inspector: TicketSalesWidgetBrickInspector,
-    label: brickMeta.ticketSalesWidget.displayName,
-    icon: brickMeta.ticketSalesWidget.icon,
-    category: brickMeta.ticketSalesWidget.category
+  button: {
+    type: 'button',
+    category: brickMeta.button.category,
+    label: brickMeta.button.displayName,
+    component: ButtonBrickComponent,
+    inspector: ButtonBrickInspector
   },
   scheduleAgenda: {
-    component: ScheduleAgendaBrickComponent,
-    inspector: ScheduleAgendaBrickInspector,
+    type: 'scheduleAgenda',
+    category: brickMeta.scheduleAgenda.category,
     label: brickMeta.scheduleAgenda.displayName,
-    icon: brickMeta.scheduleAgenda.icon,
-    category: brickMeta.scheduleAgenda.category
+    component: ScheduleAgendaBrickComponent,
+    inspector: ScheduleAgendaBrickInspector
   },
-  countdownTimer: {
-    component: CountdownTimerBrickComponent,
-    inspector: CountdownTimerBrickInspector,
-    label: brickMeta.countdownTimer.displayName,
-    icon: brickMeta.countdownTimer.icon,
-    category: brickMeta.countdownTimer.category
+  ticketSalesWidget: {
+    type: 'ticketSalesWidget',
+    category: brickMeta.ticketSalesWidget.category,
+    label: brickMeta.ticketSalesWidget.displayName,
+    component: TicketSalesWidgetBrickComponent,
+    inspector: TicketSalesWidgetBrickInspector
+  },
+  googleMaps: {
+    type: 'googleMaps',
+    category: brickMeta.googleMaps.category,
+    label: brickMeta.googleMaps.displayName,
+    component: GoogleMapsBrickComponent,
+    inspector: GoogleMapsBrickInspector
+  },
+  socialMediaSharing: {
+    type: 'socialMediaSharing',
+    category: brickMeta.socialMediaSharing.category,
+    label: brickMeta.socialMediaSharing.displayName,
+    component: SocialMediaSharingBrickComponent,
+    inspector: SocialMediaSharingBrickInspector
   }
 };
 
-// Helper function to get components by category
+export const getBrickById = (pageData, brickId) => {
+  if (!brickId || !pageData) return null;
+  
+  const searchBricks = (bricks) => {
+    for (const brick of bricks) {
+      if (brick.id === brickId) return brick;
+      if (brick.components) {
+        const found = searchBricks(brick.components);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+  
+  return searchBricks(pageData);
+};
+
+export const getAllBrickTypes = () => {
+  return Object.keys(BrickRegistry);
+};
+
 export const getComponentsByCategory = () => {
   const categories = {};
   
-  Object.entries(BrickRegistry).forEach(([type, definition]) => {
-    const category = definition.category || 'Other';
-    
+  Object.entries(BrickRegistry).forEach(([key, value]) => {
+    const category = value.category || 'Other';
     if (!categories[category]) {
       categories[category] = [];
     }
-    
     categories[category].push({
-      type,
-      label: definition.label || type,
-      icon: definition.icon
+      type: key,
+      ...value
     });
   });
   
   return categories;
 };
 
-// Get all available brick types
-export const getAllBrickTypes = () => {
-  return Object.keys(BrickRegistry).map(type => ({
-    type,
-    label: BrickRegistry[type].label || type,
-    icon: BrickRegistry[type].icon,
-    category: BrickRegistry[type].category || 'Other'
-  }));
-};
+export default BrickRegistry;

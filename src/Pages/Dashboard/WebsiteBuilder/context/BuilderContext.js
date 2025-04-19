@@ -1,13 +1,19 @@
 // Create this file at: src/Pages/Dashboard/WebsiteBuilder/context/BuilderContext.jsx
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { usePageContext } from './PageContext';
+import { getBrickById as registryGetBrickById } from '../bricks/BrickRegistry';
 
 export const BuilderContext = createContext({});
 
 export const BuilderProvider = ({ children }) => {
   const { currentPage, updateCurrentPageData } = usePageContext();
-  const pageData = Array.isArray(currentPage?.data) ? currentPage.data : [];
+  
+  const pageData = useMemo(() => 
+    Array.isArray(currentPage?.data) ? currentPage.data : [],
+    [currentPage?.data]
+  );
+  
   const [undoStack, setUndoStack] = useState([]);
   const [redoStack, setRedoStack] = useState([]);
   const [selectedBrickId, setSelectedBrickId] = useState(null);
@@ -264,23 +270,11 @@ export const BuilderProvider = ({ children }) => {
     });
   };
 
-  // Find a brick by id (recursive)
-  const getBrickById = (brickId) => {
-    if (!brickId || !pageData) return null;
-    
-    const searchBricks = (bricks) => {
-      for (const brick of bricks) {
-        if (brick.id === brickId) return brick;
-        if (brick.components) {
-          const found = searchBricks(brick.components);
-          if (found) return found;
-        }
-      }
-      return null;
-    };
-    
-    return searchBricks(pageData);
-  };
+  // Get brick by ID using the imported helper function
+  const getBrickById = useCallback((id) => {
+    if (!id) return null;
+    return registryGetBrickById(pageData, id);
+  }, [pageData]);
 
   // Get preview data 
   const getPreviewData = () => pageData;

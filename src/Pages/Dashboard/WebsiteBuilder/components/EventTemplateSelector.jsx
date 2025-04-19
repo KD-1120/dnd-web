@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import TemplateSelector from './TemplateSelector';
+import { TemplateRegistry } from '../templates';
+import { Loader } from './Loader';
 import { EventService } from '../services/EventService';
 import { EventTicketService } from '../../Other pages/services/EventTicketService';
 
@@ -12,6 +13,9 @@ const EventTemplateSelector = () => {
   const [ticketTypes, setTicketTypes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [templates, setTemplates] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const loadEventData = async () => {
@@ -55,7 +59,20 @@ const EventTemplateSelector = () => {
     };
 
     loadEventData();
+    loadTemplates();
   }, [isNewEvent, eventId]);
+
+  const loadTemplates = async () => {
+    try {
+      setIsLoading(true);
+      const allTemplates = TemplateRegistry.getAllTemplates();
+      setTemplates(allTemplates);
+    } catch (error) {
+      console.error('Error loading templates:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleTemplateSelect = async (template) => {
     try {
@@ -78,13 +95,13 @@ const EventTemplateSelector = () => {
             return injectDataIntoContainer(section, eventData, ticketTypes);
           }
           
-          // Process standalone components like countdownTimer or ticketSalesWidget
+          // Process standalone components
           return injectDataIntoComponent(section, eventData, ticketTypes);
         });
-      }
 
-      // Save the customized template for the event
-      await EventService.saveTemplate(eventId, customizedTemplate.data);
+        // Save the customized template for the event immediately
+        await EventService.saveTemplate(eventId, customizedTemplate.data, eventData);
+      }
 
       // Navigate to the website builder
       navigate(`/dashboard/events/${eventId}/website`, {
@@ -95,10 +112,7 @@ const EventTemplateSelector = () => {
       });
     } catch (error) {
       console.error('Error customizing template:', error);
-      // Navigate anyway, but without customization
-      navigate(`/dashboard/events/${eventId}/website`, {
-        state: { template }
-      });
+      setError('Failed to customize template. Please try again.');
     }
   };
 
@@ -230,9 +244,15 @@ const EventTemplateSelector = () => {
     return updatedComponent;
   };
 
+  const categories = ['all', ...new Set(templates.map(t => t.category))];
+
+  const filteredTemplates = selectedCategory === 'all'
+    ? templates
+    : templates.filter(t => t.category === selectedCategory);
+
   // Display loading or error states
-  if (loading) {
-    return <div>Loading event data...</div>;
+  if (loading || isLoading) {
+    return <Loader />;
   }
 
   if (error) {
@@ -240,7 +260,120 @@ const EventTemplateSelector = () => {
   }
 
   return (
-    <TemplateSelector onSelectTemplate={handleTemplateSelect} />
+    <div className="template-selector">
+      <div className="category-filters">
+        {categories.map(category => (
+          <button
+            key={category}
+            className={`category-btn ${selectedCategory === category ? 'active' : ''}`}
+            onClick={() => setSelectedCategory(category)}
+          >
+            {category.charAt(0).toUpperCase() + category.slice(1)}
+          </button>
+        ))}
+      </div>
+
+      <div className="templates-grid">
+        {filteredTemplates.map(template => (
+          <div
+            key={template.id}
+            className={`template-card ${eventData?.templateId === template.id ? 'selected' : ''}`}
+            onClick={() => handleTemplateSelect(template)}
+          >
+            <div className="template-preview">
+              <img src={template.thumbnail} alt={template.name} />
+            </div>
+            <div className="template-info">
+              <h3>{template.name}</h3>
+              <p>{template.description}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <style>{`
+        .template-selector {
+          padding: 20px;
+        }
+
+        .category-filters {
+          display: flex;
+          gap: 12px;
+          margin-bottom: 24px;
+          flex-wrap: wrap;
+        }
+
+        .category-btn {
+          padding: 8px 16px;
+          border: 1px solid #e2e8f0;
+          border-radius: 6px;
+          background: white;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .category-btn:hover {
+          background: #f7fafc;
+        }
+
+        .category-btn.active {
+          background: #3182ce;
+          color: white;
+          border-color: #3182ce;
+        }
+
+        .templates-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+          gap: 24px;
+        }
+
+        .template-card {
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          overflow: hidden;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .template-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .template-card.selected {
+          border-color: #3182ce;
+          box-shadow: 0 0 0 2px #3182ce;
+        }
+
+        .template-preview {
+          aspect-ratio: 16/9;
+          overflow: hidden;
+        }
+
+        .template-preview img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .template-info {
+          padding: 16px;
+        }
+
+        .template-info h3 {
+          margin: 0 0 8px 0;
+          font-size: 16px;
+          font-weight: 600;
+        }
+
+        .template-info p {
+          margin: 0;
+          font-size: 14px;
+          color: #64748b;
+        }
+      `}</style>
+    </div>
   );
 };
 

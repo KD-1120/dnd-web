@@ -83,12 +83,6 @@ const InlineTitleInput = styled.input`
   }
 `;
 
-const ExtraActions = styled.div`
-  display: flex;
-  align-items: center;
-  margin-left: 8px;
-`;
-
 const ViewSwitcher = styled.div`
   display: flex;
   border: 1px solid #dadce0;
@@ -237,35 +231,21 @@ export function SimplifiedTopBar({
   templateName = 'Untitled',
   eventData = null
 }) {
-  const { undo, redo, saveCurrentState, pageData } = useBuilderContext();
-  const {
-    pages,
-    setSelectedPageId,
-    createPage,
-    currentPage,
-    renamePage,
-    duplicatePage,
-    deletePage,
-    movePageUp,
-    movePageDown,
-    setPageVisibility
-  } = usePageContext();
+  const { undo, redo, saveCurrentState, pageData, setPageData } = useBuilderContext();
   const { viewMode, setViewMode } = useViewMode();
+  const { pages = [], currentPage, renamePage } = usePageContext();
 
-  /* Inline rename states */
+  const [showThemeSelector, setShowThemeSelector] = useState(false);
+  const [showSaved, setShowSaved] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
   const [tempName, setTempName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  const [isPublishing, setIsPublishing] = useState(false);
-  const [showSaved, setShowSaved] = useState(false);
-
-  /* Theme selector state */
-  const [showThemeSelector, setShowThemeSelector] = useState(false);
 
   useEffect(() => {
     setIsRenaming(false);
-    setTempName(currentPage ? currentPage.name : (eventData?.title || templateName));
-  }, [currentPage, templateName, eventData]);
+    setTempName(currentPage?.name || eventData?.title || templateName);
+  }, [templateName, eventData, currentPage?.name]);
 
   const handleTitleClick = () => {
     if (!currentPage) return;
@@ -407,6 +387,9 @@ export function SimplifiedTopBar({
       }
       return newBlock;
     });
+
+    // Update the page data
+    setPageData(updatedData);
 
     // Use the page context to update the data
     if (currentPage) {

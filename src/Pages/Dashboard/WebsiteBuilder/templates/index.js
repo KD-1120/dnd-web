@@ -1,7 +1,18 @@
-import { conferenceTemplate } from './Conference/index';
+import { TemplateRegistry } from './TemplateRegistry';
+import { eventTemplate } from './event-template';
+import { workshopTemplate } from './workshop-template';
+import { conferenceTemplate } from './conference-template';
 import { concertTemplate } from './Concert/index';
-import { eventTemplate } from './Event/index';
-// Import other templates as they're created
+
+// Register all templates
+TemplateRegistry.registerTemplate(eventTemplate);
+TemplateRegistry.registerTemplate(workshopTemplate);
+TemplateRegistry.registerTemplate(conferenceTemplate);
+
+export { TemplateRegistry };
+export * from './event-template';
+export * from './workshop-template';
+export * from './conference-template';
 
 export const templates = {
   conference: conferenceTemplate,

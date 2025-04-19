@@ -362,8 +362,7 @@ const EventsOverview = () => {
                         <Globe size={16} />
                       </ActionIconButton>
                       <ActionIconButton 
-                        as={Link} 
-                        to={`/dashboard/events/${event.id}/website`}
+                        onClick={() => window.open(`/dashboard/events/${event.id}/website`, '_blank')}
                         title="Manage Website"
                       >
                         <Eye size={16} />

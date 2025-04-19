@@ -516,8 +516,7 @@ const EditEvent = () => {
                 <div>
                   <ActionButton 
                     variant="outline-primary"
-                    as={Link}
-                    to={`/dashboard/events/${eventId}/website`}
+                    onClick={() => window.open(`/dashboard/events/${eventId}/website`, '_blank')}
                     className="me-2"
                   >
                     <Eye size={16} className="me-2" />

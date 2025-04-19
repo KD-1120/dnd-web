@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
-const PageContext = createContext(null);
+export const PageContext = createContext(null);
 
 export const PageProvider = ({ children, initialData = [] }) => {
   const [pages, setPages] = useState([

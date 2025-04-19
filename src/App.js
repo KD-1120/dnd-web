@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 
 // Layout Components
@@ -23,7 +23,6 @@ import TicketScanner from './Pages/Dashboard/Other pages/TicketScanner';
 import PollCreation from './Pages/Dashboard/Other pages/PollCreation';
 import EventAnalytics from './Pages/Dashboard/Other pages/EventAnalytics';
 import QASession from './Pages/Dashboard/Other pages/QASession';
-import AttendeeManagement from './Pages/Dashboard/Other pages/AttendeeManagement';
 import PollsDashboard from './Pages/Dashboard/Other pages/PollsDashboard';
 import Settings from './Pages/Dashboard/Other pages/Settings';
 import EditEvent from './Pages/Dashboard/Other pages/EditEvent';
@@ -31,12 +30,14 @@ import AttendeesDashboard from './Pages/Dashboard/AttendeesDashboard';
 import EventSelector from './Pages/Dashboard/components/EventSelector';
 import AwardsDashboard from './Pages/Dashboard/Other pages/AwardsDashboard';
 import AwardCategoryCreation from './Pages/Dashboard/Other pages/AwardCategoryCreation';
+import { EventWebsiteRouter } from './Pages/Dashboard/WebsiteBuilder/components/EventWebsiteRouter';
 
+// Additional Dashboard Imports
 import DashboardLayout from './Pages/Dashboard/components/DashboardLayout';
 import DashboardHome from './Pages/Dashboard/DashboardHome';
 import EventsOverview from './Pages/Dashboard/EventsOverview';
-import Login from './Pages/Login';
 import EventTemplateSelector from './Pages/Dashboard/WebsiteBuilder/components/EventTemplateSelector';
+import Login from './Pages/Login';
 
 // Auth Pages (these would be created separately)
 const Signup = () => <div>Signup Page</div>;
@@ -81,12 +82,15 @@ function AppRoutes() {
                     <Route path="/custom-links" element={<CustomLinks />} />
                     <Route path="/analytics-dashboard" element={<AnalyticalDashboard />} />
                     <Route path="/mobile-optimized" element={<MobileOptimized />} />
+
+                    {/* Website Builder Route - Outside Dashboard Layout */}
+                    <Route path="/dashboard/events/:eventId/website" element={<WebsiteBuilder />} />
                     
                     {/* Auth Routes */}
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
                     
-                    {/* Dashboard Routes */}
+                    {/* Dashboard Routes - With Layout */}
                     <Route path="/dashboard" element={<DashboardLayout />}>
                         <Route index element={<DashboardHome />} />
                         <Route path="events" element={<EventsOverview />} />
@@ -103,7 +107,6 @@ function AppRoutes() {
                         <Route path="events/:eventId/awards/create" element={<AwardCategoryCreation />} />
                         <Route path="settings" element={<Settings />} />
                         <Route path="events/website-templates" element={<EventTemplateSelector />} />
-                        <Route path="events/:eventId/website" element={<WebsiteBuilder />} />
                         
                         {/* Event selector routes for sidebar navigation */}
                         <Route path="attendees" element={<EventSelector sectionType="attendees" />} />
@@ -123,14 +126,28 @@ function AppRoutes() {
     );
 }
 
-function App() {
+const App = () => {
+  // Check if we're on a subdomain
+  const hostname = window.location.hostname;
+  const isSubdomain = hostname.split('.').length > 2;
+
+  if (isSubdomain) {
+    // If we're on a subdomain, only render the event website
     return (
-        <Router>
-            <AppWrapper>
-                <AppRoutes/>
-            </AppWrapper>
-        </Router>
+      <BrowserRouter>
+        <EventWebsiteRouter />
+      </BrowserRouter>
     );
-}
+  }
+
+  // Otherwise render the main application
+  return (
+    <BrowserRouter>
+      <AppWrapper>
+        <AppRoutes/>
+      </AppWrapper>
+    </BrowserRouter>
+  );
+};
 
 export default App;
