@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Badge, Button, Alert } from 'react-bootstrap';
 import styled from 'styled-components';
 import { Link, useNavigate } from 'react-router-dom';
-import { Calendar, Users, Ticket, TrendingUp, Plus, Edit2, BarChart2, QrCode, Trash2, ArrowRight, Eye, MapPin } from 'lucide-react';
+import { Calendar, Users, Ticket, TrendingUp, Plus, Edit2, BarChart2, QrCode, Trash2, ArrowRight, Eye, MapPin, Globe } from 'lucide-react';
 import { EventTicketService } from './Other pages/services/EventTicketService';
 import { colors, spacing, shadows, borderRadius, typography } from '../../GlobalStyles';
 
@@ -353,6 +353,21 @@ const EventsOverview = () => {
                       {eventStatusInfo.label}
                     </StatusBadge>
                     <div>
+                      <ActionIconButton 
+                        as="a"
+                        href={`/events/${event.id}`}
+                        target="_blank"
+                        title="View Public Website"
+                      >
+                        <Globe size={16} />
+                      </ActionIconButton>
+                      <ActionIconButton 
+                        as={Link} 
+                        to={`/dashboard/events/${event.id}/website`}
+                        title="Manage Website"
+                      >
+                        <Eye size={16} />
+                      </ActionIconButton>
                       <ActionIconButton 
                         as={Link} 
                         to={`/dashboard/events/${event.id}/tickets/scan`}

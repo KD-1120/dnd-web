@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Form, Button, Card, Row, Col, Alert } from 'react-bootstrap';
-import { Calendar, Clock, MapPin, Users, Ticket, ArrowRight, Plus } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, Ticket, ArrowRight, Plus, Globe, Eye } from 'lucide-react';
 import { EventTicketService } from './services/EventTicketService';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { colors, spacing, shadows, borderRadius, typography } from '../../../GlobalStyles';
 
@@ -500,6 +500,45 @@ const EditEvent = () => {
                   </div>
                 </TicketTypeCard>
               ))}
+            </Card.Body>
+          </FormSection>
+
+          <FormSection>
+            <Card.Body>
+              <div className="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                  <h3 className="mb-0">
+                    <Globe size={20} className="me-2" />
+                    Website
+                  </h3>
+                  <p className="text-muted mb-0">Manage your event's website template</p>
+                </div>
+                <div>
+                  <ActionButton 
+                    variant="outline-primary"
+                    as={Link}
+                    to={`/dashboard/events/${eventId}/website`}
+                    className="me-2"
+                  >
+                    <Eye size={16} className="me-2" />
+                    Edit Current Website
+                  </ActionButton>
+                  <ActionButton 
+                    variant="primary"
+                    as={Link}
+                    to={`/dashboard/events/website-templates`}
+                    state={{ eventId, isNewEvent: false }}
+                  >
+                    <Plus size={16} className="me-2" />
+                    Switch Template
+                  </ActionButton>
+                </div>
+              </div>
+
+              <p>
+                Your event website allows attendees to view event details, schedule, and purchase tickets.
+                You can edit the current website design or switch to a different template at any time.
+              </p>
             </Card.Body>
           </FormSection>
 

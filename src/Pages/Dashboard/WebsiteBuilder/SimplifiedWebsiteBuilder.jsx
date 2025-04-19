@@ -9,6 +9,7 @@ import SimplifiedCanvas from './components/SimplifiedCanvas';
 import SimplifiedPropertiesSidebar from './components/SimplifiedPropertiesSidebar';
 import { TemplateService } from './services/TemplateService';
 import { EventService } from './services/EventService';
+import { EventTicketService } from '../Other pages/services/EventTicketService';
 
 const GlobalStyle = createGlobalStyle`
   body {
@@ -76,9 +77,33 @@ function SimplifiedWebsiteBuilder() {
   const [isPropertiesOpen, setPropertiesOpen] = useState(true);
   const [loadingTemplate, setLoadingTemplate] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [eventData, setEventData] = useState(null);
   const location = useLocation();
   const navigate = useNavigate();
   const { eventId } = useParams();
+  
+  // Load event data
+  useEffect(() => {
+    const fetchEventData = async () => {
+      if (!eventId) return;
+      
+      try {
+        const event = await EventTicketService.getEvent(eventId);
+        if (event) {
+          setEventData(event);
+        }
+      } catch (error) {
+        console.error('Error loading event data:', error);
+      }
+    };
+    
+    // Load event data from location state or fetch it
+    if (location.state?.eventData) {
+      setEventData(location.state.eventData);
+    } else {
+      fetchEventData();
+    }
+  }, [eventId, location.state]);
   
   const loadTemplate = useCallback(async (templateFromState, forceFresh = false) => {
     console.log("Template loading started, template from state:", templateFromState);
@@ -188,6 +213,27 @@ function SimplifiedWebsiteBuilder() {
       loadTemplate(location.state.template, true);
     }
   }, [selectedTemplate, location.state, loadTemplate]);
+
+  const handlePreview = useCallback(() => {
+    // Open the website preview in a new tab
+    window.open(`/event/${eventId}`, '_blank');
+  }, [eventId]);
+
+  const handlePublish = useCallback(async () => {
+    try {
+      setLoadingTemplate(true);
+      // Update event status to published
+      await EventService.publishEvent(eventId);
+      // Save the current template state
+      await handleSave(selectedTemplate?.data || []);
+      alert('Website published successfully!');
+    } catch (error) {
+      console.error('Error publishing website:', error);
+      alert('Error publishing website. Please try again.');
+    } finally {
+      setLoadingTemplate(false);
+    }
+  }, [eventId, selectedTemplate, handleSave]);
   
   return (
     <>
@@ -200,7 +246,10 @@ function SimplifiedWebsiteBuilder() {
               onSave={handleSave}
               onReset={handleReset}
               onBackToTemplates={handleBackToTemplates}
+              onPreview={handlePreview}
+              onPublish={handlePublish}
               templateName={selectedTemplate?.name || 'Untitled'}
+              eventData={eventData}
             />
             <MainContainer>
               <CanvasContainer>
