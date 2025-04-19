@@ -649,9 +649,9 @@ export function SimplifiedTopBar({
 
       <ActionButton
         onClick={handlePreview}
-        buttonType="green"
+        buttonType="orange"
         tooltip="Preview page"
-        icon={<Globe size={16} />}
+        icon={<Eye size={16} />}
       >
       </ActionButton>
 
@@ -668,9 +668,9 @@ export function SimplifiedTopBar({
       <ActionButton
         onClick={handlePublish}
         disabled={isPublishing}
-        buttonType="orange"
+        buttonType="green"
         tooltip="Publish page"
-        icon={<Eye size={16} />}
+        icon={<Globe size={16} />}
       >
         {isPublishing ? 'Publishing...' : ''}
       </ActionButton>

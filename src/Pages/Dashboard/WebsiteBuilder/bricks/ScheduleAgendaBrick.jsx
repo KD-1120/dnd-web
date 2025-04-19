@@ -232,82 +232,60 @@ export function ScheduleAgendaBrickComponent({ brick, onSelect, isSelected }) {
   const [activeDay, setActiveDay] = useState(0);
   const [expandedSession, setExpandedSession] = useState(null);
   
-  // Mock schedule data - in a real app, this would come from props or an API
-  const schedule = props.schedule || [
-    {
-      day: 'Day 1',
-      date: 'July 12, 2025',
-      sessions: [
-        {
-          id: 'day1-session1',
-          time: '09:00',
-          duration: '60 min',
-          title: 'Opening Keynote',
-          location: 'Main Stage',
-          speakers: [
-            { name: 'Sarah Johnson', role: 'CEO, TechCorp', avatar: '/api/placeholder/48/48' }
-          ],
-          description: 'Join us for the opening keynote where we will introduce the conference theme and preview the exciting sessions ahead.'
-        },
-        {
-          id: 'day1-session2',
-          time: '10:30',
-          duration: '45 min',
-          title: 'Future of AI in Business',
-          location: 'Workshop Room A',
-          speakers: [
-            { name: 'Michael Chen', role: 'AI Director, FutureNow', avatar: '/api/placeholder/48/48' }
-          ],
-          description: 'Explore the latest advancements in artificial intelligence and how they are transforming business operations and customer experiences.'
-        },
-        {
-          id: 'day1-session3',
-          time: '13:00',
-          duration: '90 min',
-          title: 'Networking Lunch',
-          location: 'Grand Hall',
-          speakers: [],
-          description: 'Connect with fellow attendees, speakers, and sponsors during our catered networking lunch.'
-        }
-      ]
-    },
-    {
-      day: 'Day 2',
-      date: 'July 13, 2025',
-      sessions: [
-        {
-          id: 'day2-session1',
-          time: '09:30',
-          duration: '90 min',
-          title: 'Web Development Workshop',
-          location: 'Lab Room 101',
-          speakers: [
-            { name: 'Lisa Rodriguez', role: 'Lead Developer, WebTech', avatar: '/api/placeholder/48/48' },
-            { name: 'David Kim', role: 'UX Designer, WebTech', avatar: '/api/placeholder/48/48' }
-          ],
-          description: 'A hands-on workshop where you will learn the latest web development techniques and best practices.'
-        },
-        {
-          id: 'day2-session2',
-          time: '11:30',
-          duration: '60 min',
-          title: 'Cybersecurity Panel',
-          location: 'Conference Room B',
-          speakers: [
-            { name: 'James Wilson', role: 'Security Expert, SecureNet', avatar: '/api/placeholder/48/48' },
-            { name: 'Emma Davis', role: 'CISO, Enterprise Solutions', avatar: '/api/placeholder/48/48' },
-            { name: 'Robert Taylor', role: 'Ethical Hacker', avatar: '/api/placeholder/48/48' }
-          ],
-          description: 'Industry experts discuss the evolving landscape of cybersecurity threats and share strategies for protecting your organization.'
-        }
-      ]
-    }
-  ];
+  // Initialize schedule data with empty array if not provided
+  const schedule = Array.isArray(props.schedule) ? props.schedule : [];
   
   const toggleSession = (sessionId) => {
     setExpandedSession(expandedSession === sessionId ? null : sessionId);
   };
   
+  // If no schedule data is available, show a placeholder message
+  if (schedule.length === 0) {
+    return (
+      <div 
+        style={{ 
+          position: 'relative',
+          padding: '4px',
+          border: isSelected ? '1px dashed #2563eb' : 'none',
+          borderRadius: '4px'
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onSelect?.(id);
+        }}
+      >
+        <ScheduleContainer
+          bgColor={props.bgColor}
+          borderRadius={props.borderRadius}
+          boxShadow={props.boxShadow}
+          padding={props.padding}
+          marginTop={props.marginTop}
+          marginBottom={props.marginBottom}
+          marginLeft={props.marginLeft}
+          marginRight={props.marginRight}
+          border={props.border}
+          fontFamily={props.fontFamily}
+        >
+          <ScheduleHeader alignment={props.headerAlignment}>
+            <ScheduleTitle
+              fontSize={props.titleFontSize}
+              fontWeight={props.titleFontWeight}
+              color={props.titleColor}
+            >
+              {props.title || 'Event Schedule'}
+            </ScheduleTitle>
+            <ScheduleDescription
+              fontSize={props.descriptionFontSize}
+              color={props.descriptionColor}
+            >
+              No schedule data available yet.
+            </ScheduleDescription>
+          </ScheduleHeader>
+        </ScheduleContainer>
+      </div>
+    );
+  }
+
   return (
     <div 
       style={{ 
@@ -368,7 +346,7 @@ export function ScheduleAgendaBrickComponent({ brick, onSelect, isSelected }) {
         </TabsContainer>
         
         <SessionsList>
-          {schedule[activeDay]?.sessions.map((session) => {
+          {schedule[activeDay]?.sessions?.map((session) => {
             const isOpen = expandedSession === session.id;
             
             return (
@@ -392,11 +370,12 @@ export function ScheduleAgendaBrickComponent({ brick, onSelect, isSelected }) {
                       {session.duration}
                     </SessionDuration>
                   </SessionTime>
+                  
                   <SessionInfo>
                     <SessionTitle color={props.sessionTitleColor}>
                       {session.title}
                     </SessionTitle>
-                    {session.speakers.length > 0 && (
+                    {session.speakers?.length > 0 && (
                       <SessionSpeaker color={props.speakerColor}>
                         <User size={14} />
                         {session.speakers.length === 1 
@@ -405,6 +384,7 @@ export function ScheduleAgendaBrickComponent({ brick, onSelect, isSelected }) {
                       </SessionSpeaker>
                     )}
                   </SessionInfo>
+                  
                   <SessionAction>
                     {isOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                   </SessionAction>
@@ -431,19 +411,21 @@ export function ScheduleAgendaBrickComponent({ brick, onSelect, isSelected }) {
                     </SessionDetailsContent>
                   </SessionDetailsItem>
                   
-                  <SessionDetailsItem>
-                    <SessionDetailsIcon color={props.detailsIconColor}>
-                      <MapPin size={16} />
-                    </SessionDetailsIcon>
-                    <SessionDetailsContent color={props.detailsTextColor}>
-                      <SessionDetailsTitle color={props.detailsTitleColor}>
-                        Location
-                      </SessionDetailsTitle>
-                      {session.location}
-                    </SessionDetailsContent>
-                  </SessionDetailsItem>
+                  {session.location && (
+                    <SessionDetailsItem>
+                      <SessionDetailsIcon color={props.detailsIconColor}>
+                        <MapPin size={16} />
+                      </SessionDetailsIcon>
+                      <SessionDetailsContent color={props.detailsTextColor}>
+                        <SessionDetailsTitle color={props.detailsTitleColor}>
+                          Location
+                        </SessionDetailsTitle>
+                        {session.location}
+                      </SessionDetailsContent>
+                    </SessionDetailsItem>
+                  )}
                   
-                  {session.speakers.length > 0 && (
+                  {session.speakers?.length > 0 && (
                     <SessionDetailsItem>
                       <SessionDetailsIcon color={props.detailsIconColor}>
                         <User size={16} />

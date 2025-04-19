@@ -167,16 +167,24 @@ const EventTemplateSelector = () => {
         }
         break;
         
-      case 'countdownTimer':
-        // Update countdown with event dates
-        if (eventData.startDate || eventData.endDate) {
+      case 'scheduleAgenda':
+        // Update schedule component with real event schedule
+        if (eventData.schedule && eventData.schedule.length > 0) {
           updatedComponent.props = {
             ...updatedComponent.props,
-            eventDate: eventData.startDate || undefined,
-            eventEndDate: eventData.endDate || undefined,
-            eventLocation: eventData.venue || undefined
+            schedule: eventData.schedule
           };
         }
+        break;
+
+      case 'countdownTimer':
+        // Update countdown with event dates
+        updatedComponent.props = {
+          ...updatedComponent.props,
+          eventDate: eventData.startDate,
+          eventEndDate: eventData.endDate,
+          eventLocation: eventData.venue
+        };
         break;
         
       case 'ticketSalesWidget':
@@ -199,10 +207,6 @@ const EventTemplateSelector = () => {
             eventId: eventId
           };
         }
-        break;
-        
-      case 'scheduleAgenda':
-        // Could update schedule if we had event schedule data
         break;
         
       case 'googleMaps':

@@ -144,6 +144,13 @@ const EventCreation = () => {
     isPublic: true,
     organizerName: '',
     contactEmail: '',
+    schedule: [
+      {
+        day: 'Day 1',
+        date: '',
+        sessions: []
+      }
+    ],
     ticketTypes: [
       {
         name: 'General Admission',
@@ -172,6 +179,7 @@ const EventCreation = () => {
         isPublic: eventData.isPublic,
         organizerName: eventData.organizerName,
         contactEmail: eventData.contactEmail,
+        schedule: eventData.schedule,
         status: 'draft'
       });
 
@@ -200,7 +208,8 @@ const EventCreation = () => {
         endDate: eventData.endDate,
         venue: eventData.venue,
         organizerName: eventData.organizerName,
-        contactEmail: eventData.contactEmail
+        contactEmail: eventData.contactEmail,
+        schedule: eventData.schedule
       }));
 
       // Redirect to template selection with event ID
@@ -437,34 +446,222 @@ const EventCreation = () => {
                   </Col>
                 </Row>
 
-                <Row>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <FormLabel>Organizer Name</FormLabel>
-                      <Form.Control
-                        type="text"
-                        name="organizerName"
-                        value={eventData.organizerName}
-                        onChange={handleInputChange}
-                        placeholder="Who is organizing this event"
-                        required
-                      />
-                    </Form.Group>
-                  </Col>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <FormLabel>Contact Email</FormLabel>
-                      <Form.Control
-                        type="email"
-                        name="contactEmail"
-                        value={eventData.contactEmail}
-                        onChange={handleInputChange}
-                        placeholder="Email for attendee inquiries"
-                        required
-                      />
-                    </Form.Group>
-                  </Col>
-                </Row>
+                <SectionTitle className="mt-4">
+                  <Calendar size={20} className="me-2" />
+                  Event Schedule
+                </SectionTitle>
+                <p className="text-muted mb-4">Add sessions to your event schedule (optional)</p>
+
+                {eventData.schedule.map((day, dayIndex) => (
+                  <TicketTypeCard key={dayIndex}>
+                    <Row>
+                      <Col md={6}>
+                        <Form.Group className="mb-3">
+                          <FormLabel>Day Label</FormLabel>
+                          <Form.Control
+                            type="text"
+                            value={day.day}
+                            onChange={(e) => {
+                              const newSchedule = [...eventData.schedule];
+                              newSchedule[dayIndex].day = e.target.value;
+                              setEventData(prev => ({ ...prev, schedule: newSchedule }));
+                            }}
+                            placeholder="e.g., Day 1, Opening Day"
+                          />
+                        </Form.Group>
+                      </Col>
+                      <Col md={6}>
+                        <Form.Group className="mb-3">
+                          <FormLabel>Date</FormLabel>
+                          <Form.Control
+                            type="date"
+                            value={day.date}
+                            onChange={(e) => {
+                              const newSchedule = [...eventData.schedule];
+                              newSchedule[dayIndex].date = e.target.value;
+                              setEventData(prev => ({ ...prev, schedule: newSchedule }));
+                            }}
+                          />
+                        </Form.Group>
+                      </Col>
+                    </Row>
+
+                    {day.sessions.map((session, sessionIndex) => (
+                      <Card key={sessionIndex} className="mb-3">
+                        <Card.Body>
+                          <Row>
+                            <Col md={6}>
+                              <Form.Group className="mb-3">
+                                <FormLabel>Session Title</FormLabel>
+                                <Form.Control
+                                  type="text"
+                                  value={session.title || ''}
+                                  onChange={(e) => {
+                                    const newSchedule = [...eventData.schedule];
+                                    if (!newSchedule[dayIndex].sessions[sessionIndex]) {
+                                      newSchedule[dayIndex].sessions[sessionIndex] = {};
+                                    }
+                                    newSchedule[dayIndex].sessions[sessionIndex].title = e.target.value;
+                                    setEventData(prev => ({ ...prev, schedule: newSchedule }));
+                                  }}
+                                  placeholder="Session title"
+                                />
+                              </Form.Group>
+                            </Col>
+                            <Col md={3}>
+                              <Form.Group className="mb-3">
+                                <FormLabel>Time</FormLabel>
+                                <Form.Control
+                                  type="time"
+                                  value={session.time || ''}
+                                  onChange={(e) => {
+                                    const newSchedule = [...eventData.schedule];
+                                    if (!newSchedule[dayIndex].sessions[sessionIndex]) {
+                                      newSchedule[dayIndex].sessions[sessionIndex] = {};
+                                    }
+                                    newSchedule[dayIndex].sessions[sessionIndex].time = e.target.value;
+                                    setEventData(prev => ({ ...prev, schedule: newSchedule }));
+                                  }}
+                                />
+                              </Form.Group>
+                            </Col>
+                            <Col md={3}>
+                              <Form.Group className="mb-3">
+                                <FormLabel>Duration (mins)</FormLabel>
+                                <Form.Control
+                                  type="number"
+                                  value={session.duration || ''}
+                                  onChange={(e) => {
+                                    const newSchedule = [...eventData.schedule];
+                                    if (!newSchedule[dayIndex].sessions[sessionIndex]) {
+                                      newSchedule[dayIndex].sessions[sessionIndex] = {};
+                                    }
+                                    newSchedule[dayIndex].sessions[sessionIndex].duration = e.target.value;
+                                    setEventData(prev => ({ ...prev, schedule: newSchedule }));
+                                  }}
+                                  placeholder="Duration"
+                                />
+                              </Form.Group>
+                            </Col>
+                          </Row>
+                          <Row>
+                            <Col md={6}>
+                              <Form.Group className="mb-3">
+                                <FormLabel>Location</FormLabel>
+                                <Form.Control
+                                  type="text"
+                                  value={session.location || ''}
+                                  onChange={(e) => {
+                                    const newSchedule = [...eventData.schedule];
+                                    if (!newSchedule[dayIndex].sessions[sessionIndex]) {
+                                      newSchedule[dayIndex].sessions[sessionIndex] = {};
+                                    }
+                                    newSchedule[dayIndex].sessions[sessionIndex].location = e.target.value;
+                                    setEventData(prev => ({ ...prev, schedule: newSchedule }));
+                                  }}
+                                  placeholder="Session location"
+                                />
+                              </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                              <Form.Group className="mb-3">
+                                <FormLabel>Description</FormLabel>
+                                <Form.Control
+                                  as="textarea"
+                                  rows={2}
+                                  value={session.description || ''}
+                                  onChange={(e) => {
+                                    const newSchedule = [...eventData.schedule];
+                                    if (!newSchedule[dayIndex].sessions[sessionIndex]) {
+                                      newSchedule[dayIndex].sessions[sessionIndex] = {};
+                                    }
+                                    newSchedule[dayIndex].sessions[sessionIndex].description = e.target.value;
+                                    setEventData(prev => ({ ...prev, schedule: newSchedule }));
+                                  }}
+                                  placeholder="Session description"
+                                />
+                              </Form.Group>
+                            </Col>
+                          </Row>
+                          <div className="text-end">
+                            <Button
+                              variant="outline-danger"
+                              size="sm"
+                              onClick={() => {
+                                const newSchedule = [...eventData.schedule];
+                                newSchedule[dayIndex].sessions.splice(sessionIndex, 1);
+                                setEventData(prev => ({ ...prev, schedule: newSchedule }));
+                              }}
+                            >
+                              Remove Session
+                            </Button>
+                          </div>
+                        </Card.Body>
+                      </Card>
+                    ))}
+                    
+                    <div className="mb-3">
+                      <Button
+                        variant="outline-primary"
+                        size="sm"
+                        onClick={() => {
+                          const newSchedule = [...eventData.schedule];
+                          if (!newSchedule[dayIndex].sessions) {
+                            newSchedule[dayIndex].sessions = [];
+                          }
+                          newSchedule[dayIndex].sessions.push({
+                            title: '',
+                            time: '',
+                            duration: '',
+                            location: '',
+                            description: ''
+                          });
+                          setEventData(prev => ({ ...prev, schedule: newSchedule }));
+                        }}
+                      >
+                        <Plus size={16} className="me-2" />
+                        Add Session
+                      </Button>
+                    </div>
+
+                    {eventData.schedule.length > 1 && (
+                      <div className="text-end">
+                        <Button
+                          variant="outline-danger"
+                          size="sm"
+                          onClick={() => {
+                            const newSchedule = eventData.schedule.filter((_, index) => index !== dayIndex);
+                            setEventData(prev => ({ ...prev, schedule: newSchedule }));
+                          }}
+                        >
+                          Remove Day
+                        </Button>
+                      </div>
+                    )}
+                  </TicketTypeCard>
+                ))}
+
+                <div className="mb-4">
+                  <Button
+                    variant="outline-primary"
+                    onClick={() => {
+                      setEventData(prev => ({
+                        ...prev,
+                        schedule: [
+                          ...prev.schedule,
+                          {
+                            day: `Day ${prev.schedule.length + 1}`,
+                            date: '',
+                            sessions: []
+                          }
+                        ]
+                      }));
+                    }}
+                  >
+                    <Plus size={16} className="me-2" />
+                    Add Another Day
+                  </Button>
+                </div>
 
                 <Form.Group className="mb-3">
                   <Form.Check
